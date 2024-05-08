@@ -10,8 +10,10 @@ CREATE TABLE `users` (
   `username` varchar(255),
   `password` varchar(255),
   `bio` varchar(255),
-  `follwing` varchar(255),
-  `profile_path` varchar(255)
+  `profile_path` varchar(255),
+  `followers` integer,
+  `following` integer COMMENT 'Number of following',
+  `posts` integer COMMENT 'Number of posts'
 );
 
 CREATE TABLE `posts` (
@@ -20,7 +22,6 @@ CREATE TABLE `posts` (
   `title` varchar(255),
   `bio` text COMMENT 'Description',
   `user_id` integer,
-  `status` varchar(255),
   `created_at` timestamp,
   `backdrop_path` varchar(255) COMMENT 'path of the iamge'
 );

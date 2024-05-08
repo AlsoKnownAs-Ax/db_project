@@ -44,6 +44,44 @@ LOCK TABLES `follows` WRITE;
 INSERT INTO `follows` VALUES (1,1,2,'2024-05-01 08:00:00'),(2,1,3,'2024-05-01 08:05:00'),(3,1,4,'2024-05-01 08:10:00'),(4,1,5,'2024-05-01 08:15:00'),(5,2,1,'2024-05-02 08:00:00'),(6,2,3,'2024-05-02 08:05:00'),(7,2,4,'2024-05-02 08:10:00'),(8,2,5,'2024-05-02 08:15:00'),(9,3,1,'2024-05-03 08:00:00'),(10,3,2,'2024-05-03 08:05:00'),(11,3,4,'2024-05-03 08:10:00'),(12,3,5,'2024-05-03 08:15:00'),(13,4,1,'2024-05-04 08:00:00'),(14,4,2,'2024-05-04 08:05:00'),(15,4,3,'2024-05-04 08:10:00'),(16,4,5,'2024-05-04 08:15:00'),(17,5,1,'2024-05-05 08:00:00'),(18,5,2,'2024-05-05 08:05:00'),(19,5,3,'2024-05-05 08:10:00'),(20,5,4,'2024-05-05 08:15:00');
 /*!40000 ALTER TABLE `follows` ENABLE KEYS */;
 UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `update_follower_count_after_insert` AFTER INSERT ON `follows` FOR EACH ROW BEGIN
+    UPDATE users
+    SET followers = followers + 1
+    WHERE id = NEW.followed_user_id;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `update_follower_count_after_delete` AFTER DELETE ON `follows` FOR EACH ROW BEGIN
+    UPDATE users
+    SET followers = followers - 1
+    WHERE id = OLD.followed_user_id;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
 -- Table structure for table `notifications`
@@ -104,9 +142,47 @@ CREATE TABLE `posts` (
 
 LOCK TABLES `posts` WRITE;
 /*!40000 ALTER TABLE `posts` DISABLE KEYS */;
-INSERT INTO `posts` VALUES (1,120,'Beautiful Sunset','Description of a beautiful sunset.',1,'Active','2024-05-01 16:30:00','/images/sunset.jpg'),(2,95,'Morning Routine','Talk about the morning routine.',2,'Active','2024-05-02 05:15:00','/images/morning.jpg'),(3,75,'Tech Review','Detailed review of the latest tech gadgets.',3,'Active','2024-05-03 13:20:00','/images/tech.jpg'),(4,200,'Fitness Goals','Sharing personal fitness goals for the year.',4,'Active','2024-05-04 10:00:00','/images/fitness.jpg'),(5,150,'Book Recommendations','List of must-read books.',5,'Active','2024-05-05 18:00:00','/images/books.jpg');
+INSERT INTO `posts` VALUES (1,120,'Beautiful Sunset','Description of a beautiful sunset.',1,'Active','2024-05-01 16:30:00','Lorin_1.png'),(2,95,'Morning Routine','Talk about the morning routine.',2,'Active','2024-05-02 05:15:00','Lorin_2.png'),(3,75,'Tech Review','Detailed review of the latest tech gadgets.',3,'Active','2024-05-03 13:20:00','Mystar_1.png'),(4,200,'Fitness Goals','Sharing personal fitness goals for the year.',4,'Active','2024-05-04 10:00:00','Mystar_2.png'),(5,150,'Book Recommendations','List of must-read books.',5,'Active','2024-05-05 18:00:00','test_1.png');
 /*!40000 ALTER TABLE `posts` ENABLE KEYS */;
 UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `update_posts_count_after_insert` AFTER INSERT ON `posts` FOR EACH ROW BEGIN
+    UPDATE users
+    SET posts = posts + 1
+    WHERE id = NEW.user_id;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `update_posts_count_after_delete` AFTER DELETE ON `posts` FOR EACH ROW BEGIN
+    UPDATE users
+    SET posts = posts - 1
+    WHERE id = OLD.user_id;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
 -- Table structure for table `users`
@@ -120,8 +196,10 @@ CREATE TABLE `users` (
   `username` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
   `bio` varchar(255) DEFAULT NULL,
-  `follwing` varchar(255) DEFAULT NULL,
   `profile_path` varchar(255) DEFAULT NULL,
+  `followers` int DEFAULT NULL,
+  `following` int DEFAULT NULL,
+  `posts` int DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -132,7 +210,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'jeffreywhitaker','@5ECyIDX2g(b','Decide too four any seat avoid.',NULL,'/staff/vote.jpg'),(2,'susangibbs','3_vBOs)L)P4B','Speak marriage turn work practice.',NULL,'/sign/entire.jpg'),(3,'juliaharrington','^(5INwpOoJ&E','With tough from model student.',NULL,'/nothing/important.jpg'),(4,'gbrown','A(I85(+zOBU%','Suddenly trial identify over group computer fact.',NULL,'/member/relate.jpg'),(5,'zgonzales','7!(*','Student upon reflect.',NULL,'/strong/any.jpg');
+INSERT INTO `users` VALUES (1,'admin','admin','Decide too four any seat avoid.','alex.png',4,4,1),(2,'susangibbs','3_vBOs)L)P4B','Speak marriage turn work practice.','Lorin.png',4,4,1),(3,'juliaharrington','^(5INwpOoJ&E','With tough from model student.','Mystar.png',4,4,1),(4,'gbrown','A(I85(+zOBU%','Suddenly trial identify over group computer fact.','test.png',4,4,1),(5,'zgonzales','7!(*','Student upon reflect.','Xylo.png',4,4,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -149,4 +227,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-05-08 22:31:52
+-- Dump completed on 2024-05-08 23:03:31
