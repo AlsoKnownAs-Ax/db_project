@@ -12,7 +12,7 @@ public class HikariCPTest {
     public static void main(String[] args) {
         HikariConfig config = new HikariConfig();
         
-        String url = "jdbc:mysql://localhost:3306/transitor";
+        String url = "jdbc:mysql://localhost:3306/quackstagram";
         String user = System.getenv("DB_USERNAME");
         String password = System.getenv("DB_PASSWORD");
 

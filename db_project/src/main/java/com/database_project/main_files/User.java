@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 // Represents a user on Quackstagram
 public class User {
+    private int user_id;
     private String username;
     private String bio;
     private String password;
@@ -22,6 +23,18 @@ public class User {
         this.postsCount = 0;
         this.followersCount = 0;
         this.followingCount = 0;
+    }
+
+    public User(int user_id, String username, String bio, String password, int postsCount, int followersCount, int followingCount) {
+        this.user_id = user_id;
+        this.username = username;
+        this.bio = bio;
+        this.password = password;
+        this.pictures = new ArrayList<>();
+        // Initialize counts to 0
+        this.postsCount = postsCount;
+        this.followersCount = followersCount;
+        this.followingCount = followingCount;
     }
 
     public User(String username){
@@ -42,6 +55,8 @@ public class User {
     public int getFollowersCount() { return followersCount; }
     public int getFollowingCount() { return followingCount; }
     public List<Picture> getPictures() { return pictures; }
+    public String getPassword() { return password; }
+    public int getUserId() { return user_id; }
 
     // Setter methods for followers and following counts
     public void setFollowersCount(int followersCount) { this.followersCount = followersCount; }

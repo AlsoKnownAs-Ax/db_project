@@ -6,15 +6,13 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.SQLException;
 
+import javax.sql.DataSource;
 import javax.swing.*;
 
 import com.database_project.UI.Config.GlobalConfig;
+import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.*;
 import com.database_project.UI.factory.UIfactory;
 import com.database_project.UI.utils.Debug;
@@ -31,6 +29,8 @@ public class LoginPage extends JFrame {
     private JPanel      mainPanel;
     private JPanel      themePanel;
     private JRadioButton lightTheme, darkTheme;
+
+    DataSource dataSource = DBConnectionPool.getDataSource();
 
     public LoginPage(UIfactory uIfactory) {
         setTitle("Quackstagram - Login");
@@ -116,32 +116,55 @@ public class LoginPage extends JFrame {
     }
 
     private boolean verifyCredentials(String username, String password) {
-        try (BufferedReader reader = new BufferedReader(new FileReader("db_project/data/credentials.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] credentials = line.split(":");
-                if (credentials[0].equals(username) && credentials[1].equals(password)) {
-                String bio = credentials[2];
-                // Create User object and save information
-                newUser = new User(username, bio, password); // Assuming User constructor takes these parameters
-                saveUserInformation(newUser);
-        
+        try (var connection = dataSource.getConnection()) {
+            var query = "SELECT * FROM users WHERE username = ? AND password = ?";
+            try (var statement = connection.prepareStatement(query)) {
+                statement.setString(1, username);
+                statement.setString(2, password);
+                var result = statement.executeQuery();
+                if (result.next()) {
+                    int user_id = result.getInt("id");
+                    String bio = result.getString("bio");
+                    int postsCount = result.getInt("posts");
+                    int followersCount = result.getInt("followers");
+                    int followingCount = result.getInt("following");
+
+                    newUser = new User(user_id, username, bio, password, postsCount, followersCount, followingCount);
+                    
                     return true;
                 }
             }
-        } catch (IOException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return false;
     }
 
-    private void saveUserInformation(User user) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("db_project/data/users.txt", false))) {
-            writer.write(user.toString());  // Implement a suitable toString method in User class
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    //THIS IS SUPPOSED TO STORE THE CONNECTED USER TO CHECK IF WE ARE ONE SOMEBODY'S PROFILE OR OURS
+    // private void saveUserInformation(User user) {
+    //     try (BufferedWriter writer = new BufferedWriter(new FileWriter("db_project/data/users.txt", false))) {
+    //         writer.write(user.toString());  // Implement a suitable toString method in User class
+    //     } catch (IOException e) {
+    //         e.printStackTrace();
+    //     }
+
+    //     // try (var connection = dataSource.getConnection()) {
+    //     //     var query = "INSERT INTO users (username, bio, password, profile_path ) VALUES (?, ?, ?, ?)";
+    //     //     try (var statement = connection.prepareStatement(query)) {
+    //     //         statement.setString(1, user.getUsername());
+    //     //         statement.setString(2, user.getBio());
+    //     //         statement.setString(3, user.getPassword());
+
+    //     //         //TODO: Implement profile path in User class
+    //     //         // statement.setString(4, user.getProfilePath());
+    //     //         statement.executeUpdate();
+    //     //     }
+    //     // } catch (SQLException e) {
+    //     //     e.printStackTrace();
+    //     // }
+    // }
+
     private void onRegisterNowClicked(ActionEvent event) {
         // Open the SignUpUI frame
 

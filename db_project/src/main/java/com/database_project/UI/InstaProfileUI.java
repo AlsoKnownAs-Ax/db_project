@@ -11,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,11 +44,6 @@ public class InstaProfileUI extends JFrame{
     private JPanel headerPanel;   // Panel for the header
     private JPanel navigationPanel; // Panel for the navigation
     private User currentUser; // User object to store the current user's information
-    // Initializing counters for the methods and a bio
-    private int imageCount = 0;
-    private int followersCount = 0;
-    private int followingCount = 0;
-    private String bio = "";
     boolean isCurrentUser = false;
     String loggedInUsername = "";
 
@@ -64,73 +60,7 @@ public class InstaProfileUI extends JFrame{
         NavigationManager.setProfilePage(this);
     }
 
-    //Read image_details.txt to count the number of images posted by the user
-    public void numberOfImages(){
-        Path imageDetailsFilePath = Paths.get("img", "/img/image_details.txt");
-        try (BufferedReader imageDetailsReader = Files.newBufferedReader(imageDetailsFilePath)) {
-            String line;
-            while ((line = imageDetailsReader.readLine()) != null) {
-                if (line.contains("Username: " + currentUser.getUsername())) {
-                    imageCount++;
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        currentUser.setPostCount(imageCount);
-    }
-
-    // Read following.txt to calculate followers and following
-    public void numberOfFollowers(){
-        Path followingFilePath = Paths.get("db_project","data","following.txt");
-        try (BufferedReader followingReader = Files.newBufferedReader(followingFilePath)) {
-            String line;
-            while ((line = followingReader.readLine()) != null) {
-                String[] parts = line.split(":");
-                if (parts.length == 2) {
-                    String username = parts[0].trim();
-                    String[] followingUsers = parts[1].split(";");
-                    if (username.equals(currentUser.getUsername())) {
-                        followingCount = followingUsers.length;
-                    } else {
-                        for (String followingUser : followingUsers) {
-                            if (followingUser.trim().equals(currentUser.getUsername())) {
-                                followersCount++;
-                            }
-                        }
-                    }
-                }
-            }
-            currentUser.setFollowersCount(followersCount);
-            currentUser.setFollowingCount(followingCount);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void bioDetails(){
-        Path bioDetailsFilePath = Paths.get("db_project","data","credentials.txt");
-        
-        try (BufferedReader bioDetailsReader = Files.newBufferedReader(bioDetailsFilePath)) {
-            String line;
-            while ((line = bioDetailsReader.readLine()) != null) {
-                String[] parts = line.split(":");
-                if (parts[0].equals(currentUser.getUsername()) && parts.length >= 3) {
-                    bio = parts[2];
-                    break; // Exit the loop once the matching bio is found
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        currentUser.setBio(bio);
-    }
-
     public void setInformantion(){
-        numberOfFollowers();
-        bioDetails();
-        numberOfImages();
-
         debug.print("STATS",
             "Followers Count: " + currentUser.getFollowersCount(), 
             "Following Count: " + currentUser.getFollowingCount(), 
@@ -199,8 +129,17 @@ public class InstaProfileUI extends JFrame{
 
     // Profile image
     private JLabel createProfileImage(){
-        ImageIcon profileIcon = new ImageIcon(new ImageIcon("/img/storage/profile/"+currentUser.getUsername()+".png").getImage().getScaledInstance(PROFILE_IMAGE_SIZE, PROFILE_IMAGE_SIZE, Image.SCALE_SMOOTH));
-        JLabel profileImage = new JLabel(profileIcon);
+        String username = currentUser.getUsername();
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        URL resourceUrl = classLoader.getResource("img/storage/profile/" + username + ".png");
+
+        if(resourceUrl == null){
+            resourceUrl = classLoader.getResource("img/storage/profile/default.png");
+        }
+
+        ImageIcon profileIcon = new ImageIcon(resourceUrl);
+        Image iconScaled = profileIcon.getImage().getScaledInstance(PROFILE_IMAGE_SIZE, PROFILE_IMAGE_SIZE, Image.SCALE_SMOOTH);
+        JLabel profileImage = new JLabel(new ImageIcon(iconScaled));
         profileImage.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         return profileImage;
     }
@@ -363,39 +302,56 @@ public class InstaProfileUI extends JFrame{
         return navigationPanel;
     }
 
-private void initializeImageGrid() {
-    contentPanel.removeAll(); // Clear existing content
-    contentPanel.setLayout(new GridLayout(0, 3, 5, 5)); // Grid layout for image grid
-    contentPanel.setBackground(this.secondaryColor);
+    public Path getImageDirPath() throws Exception {
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        URL resourceUrl = classLoader.getResource("img/uploaded");
 
-    Path imageDir = Paths.get("/img", "uploaded");
-    try (Stream<Path> paths = Files.list(imageDir)) {
-        paths.filter(path -> path.getFileName().toString().startsWith(currentUser.getUsername() + "_"))
-             .forEach(path -> {
-                 ImageIcon imageIcon = new ImageIcon(new ImageIcon(path.toString()).getImage().getScaledInstance(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE, Image.SCALE_SMOOTH));
-                 JLabel imageLabel = new JLabel(imageIcon);
-                 imageLabel.addMouseListener(new MouseAdapter() {
-                     @Override
-                     public void mouseClicked(MouseEvent e) {
-                        displayImage(imageIcon); // Call method to display the clicked image
-                     }
-                 });
-                 contentPanel.add(imageLabel);
-             });
-    } catch (IOException ex) {
-        ex.printStackTrace();
-        // Handle exception (e.g., show a message or log)
+        if (resourceUrl == null) {
+            throw new Exception("Resource not found: img/uploaded");
+        }
+
+        Path imageDir = Paths.get(resourceUrl.toURI());
+
+        return imageDir;
     }
 
-    JScrollPane scrollPane = new JScrollPane(contentPanel);
-    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+    private void initializeImageGrid() {
+        contentPanel.removeAll(); // Clear existing content
+        contentPanel.setLayout(new GridLayout(0, 3, 5, 5)); // Grid layout for image grid
+        contentPanel.setBackground(this.secondaryColor);
 
-    add(scrollPane, BorderLayout.CENTER); // Add the scroll pane to the center
+        Path imageDir;
+        try {
+            imageDir = getImageDirPath();
+            try (Stream<Path> paths = Files.list(imageDir)) {
+                paths.filter(path -> path.getFileName().toString().startsWith(currentUser.getUsername() + "_"))
+                    .forEach(path -> {
+                        ImageIcon imageIcon = new ImageIcon(new ImageIcon(path.toString()).getImage().getScaledInstance(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE, Image.SCALE_SMOOTH));
+                        JLabel imageLabel = new JLabel(imageIcon);
+                        imageLabel.addMouseListener(new MouseAdapter() {
+                            @Override
+                            public void mouseClicked(MouseEvent e) {
+                                displayImage(imageIcon); // Call method to display the clicked image
+                            }
+                        });
+                        contentPanel.add(imageLabel);
+                    });
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-    revalidate();
-    repaint();
-}
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        add(scrollPane, BorderLayout.CENTER); // Add the scroll pane to the center
+
+        revalidate();
+        repaint();
+    }
 
 
 

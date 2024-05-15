@@ -6,10 +6,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.sql.SQLException;
+
 import javax.imageio.ImageIO;
+import javax.sql.DataSource;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.database_project.UI.Config.GlobalConfig;
+import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.ButtonPanel;
 import com.database_project.UI.Panels.FieldsPanel;
 import com.database_project.UI.factory.UIfactory;
@@ -27,6 +31,8 @@ public class ResgisterPage extends JFrame {
     private FieldsPanel fieldsPanel;
     private ButtonPanel buttonPanel;
     private JPanel      mainPanel;
+
+    private DataSource  dataSource = DBConnectionPool.getDataSource();
 
     public ResgisterPage(UIfactory uIfactory) {
         setTitle("Quackstagram - Register");
@@ -121,7 +127,8 @@ public class ResgisterPage extends JFrame {
     private void saveProfilePicture(File file, String username) {
         try {
             BufferedImage image = ImageIO.read(file);
-            File outputFile = new File(profilePhotoStoragePath + username + ".png");
+            String resourcePath = this.getClass().getResource(profilePhotoStoragePath).getPath();
+            File outputFile = new File(resourcePath + username + ".png");
             ImageIO.write(image, "png", outputFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -129,10 +136,16 @@ public class ResgisterPage extends JFrame {
     }
     
     private void saveCredentials(String username, String password, String bio) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("db_project/data/credentials.txt", true))) {
-            writer.write(username + ":" + password + ":" + bio);
-            writer.newLine();
-        } catch (IOException e) {
+        try (var connection = dataSource.getConnection()) {
+            var query = "INSERT INTO users (username, password, bio, profile_path) VALUES (?, ?, ?, ?)";
+            try (var statement = connection.prepareStatement(query)) {
+                statement.setString(1, username);
+                statement.setString(2, password);
+                statement.setString(3, bio);
+                statement.setString(4, username + ".png");
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }

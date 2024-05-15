@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Image;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -44,31 +45,34 @@ public class NavigationPanel{
         navigationPanel.setLayout(new BoxLayout(navigationPanel, BoxLayout.X_AXIS));
         navigationPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
  
-        navigationPanel.add(createIconButton("/img/icons/home.png", Pages.HOME));
+        navigationPanel.add(createIconButton("home.png", Pages.HOME));
         navigationPanel.add(Box.createHorizontalGlue());
-        navigationPanel.add(createIconButton("/img/icons/search.png",Pages.EXPLORE));
+        navigationPanel.add(createIconButton("search.png",Pages.EXPLORE));
         navigationPanel.add(Box.createHorizontalGlue());
-        navigationPanel.add(createIconButton("/img/icons/add.png",Pages.UPLOAD));
+        navigationPanel.add(createIconButton("add.png",Pages.UPLOAD));
         navigationPanel.add(Box.createHorizontalGlue());
-        navigationPanel.add(createIconButton("/img/icons/heart.png",Pages.NOTIFICATIONS));
+        navigationPanel.add(createIconButton("heart.png",Pages.NOTIFICATIONS));
         navigationPanel.add(Box.createHorizontalGlue());
-        navigationPanel.add(createIconButton("/img/icons/profile.png", Pages.PROFILE));
+        navigationPanel.add(createIconButton("profile.png", Pages.PROFILE));
  
         return navigationPanel;
     }
 
-    private JButton createIconButton(String iconPath, Pages buttonType) {
-        ImageIcon iconOriginal = new ImageIcon(iconPath);
+    private JButton createIconButton(String iconName, Pages buttonType) {
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        URL resourceUrl = classLoader.getResource("img/icons/" + iconName);
+
+        ImageIcon iconOriginal = new ImageIcon(resourceUrl);
         Image iconScaled = iconOriginal.getImage().getScaledInstance(NAV_ICON_SIZE, NAV_ICON_SIZE, Image.SCALE_SMOOTH);
         JButton button = new JButton(new ImageIcon(iconScaled));
         button.setBorder(BorderFactory.createEmptyBorder());
         button.setContentAreaFilled(false);
-        
+
         button.addActionListener(e -> handleButtonClick(buttonType));
-        
+
         return button;
     }
-    
+
     //refactoring: made a general handler for each button click
     private void handleButtonClick(Pages buttonType) {
         switch (buttonType) {

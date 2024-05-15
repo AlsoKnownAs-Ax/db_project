@@ -14,7 +14,7 @@ public class DBConnectionPool {
         //be sure to set the environment variables DB_USERNAME and DB_PASSWORD
         //if u don't know how, contact me
         
-        String url = "jdbc:mysql://localhost:3306/transitor";
+        String url = "jdbc:mysql://localhost:3306/quackstagram";
         String user = System.getenv("DB_USERNAME");
         String password = System.getenv("DB_PASSWORD");
 
