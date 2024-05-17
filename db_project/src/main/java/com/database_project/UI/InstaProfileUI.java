@@ -25,6 +25,7 @@ import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
 import com.database_project.UI.utils.Debug;
 import com.database_project.managers.NavigationManager;
+import com.database_project.main_files.LoggedUserSingleton;
 import com.database_project.main_files.User;
 
 public class InstaProfileUI extends JFrame{
@@ -45,6 +46,7 @@ public class InstaProfileUI extends JFrame{
     private JPanel navigationPanel; // Panel for the navigation
     private User currentUser; // User object to store the current user's information
     boolean isCurrentUser = false;
+    private LoggedUserSingleton loggedUserInstance = LoggedUserSingleton.getInstance();
     String loggedInUsername = "";
 
     public InstaProfileUI(User user) {
@@ -78,6 +80,7 @@ public class InstaProfileUI extends JFrame{
         contentPanel = new JPanel();
         headerPanel = createHeaderPanel();       // Initialize header panel
         navigationPanel = createNavigationPanel(); // Initialize navigation panel
+        System.out.println("here");
 
         initializeUI(); 
     }
@@ -98,11 +101,9 @@ public class InstaProfileUI extends JFrame{
     
     private JPanel createHeaderPanel() {
         JPanel headerPanel = new JPanel();
-        try (Stream<String> lines = Files.lines(Paths.get("db_project","data","users.txt"))) {
-            isCurrentUser = lines.anyMatch(line -> line.startsWith(currentUser.getUsername() + ":"));
-        } catch (IOException e) {
-            e.printStackTrace();  // Log or handle the exception as appropriate
-        }
+        User loggedUser = loggedUserInstance.getLoggedUser();
+        isCurrentUser = currentUser.equals(loggedUser);
+
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
         headerPanel.setBackground(this.textColor);
         // create all the other components via methods
@@ -202,11 +203,12 @@ public class InstaProfileUI extends JFrame{
         followButton.setOpaque(true);
         followButton.setBorderPainted(false);
         followButton.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0)); // Add some vertical padding
+        followButton.setFocusable(false);
 
         statsFollowPanel.add(statsPanel);
         statsFollowPanel.add(followButton);
-        
-        return statsPanel;
+
+        return statsFollowPanel;
     }
 
     private JPanel createProfileNameAndBio(){

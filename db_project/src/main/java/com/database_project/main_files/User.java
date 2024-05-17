@@ -69,4 +69,8 @@ public class User {
         return username + ":" + bio + ":" + password; // Format as needed
     }
 
+    public boolean isEqual(User user) {
+        return this.user_id == user.getUserId();
+    }
+
 }

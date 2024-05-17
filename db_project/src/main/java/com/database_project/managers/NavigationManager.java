@@ -9,6 +9,7 @@ import com.database_project.UI.ResgisterPage;
 import com.database_project.UI.UploadPage;
 import com.database_project.UI.Config.GlobalConfig;
 import com.database_project.UI.factory.UIfactory;
+import com.database_project.main_files.LoggedUserSingleton;
 
 public class NavigationManager {
     private static UIfactory uIfactory = GlobalConfig.getConfigUIfactory();

@@ -104,6 +104,7 @@ public class LoginPage extends JFrame {
             SwingUtilities.invokeLater(() -> {
                 GlobalConfig.setLightMode(lightTheme.isSelected());
 
+                LoggedUserSingleton.getInstance().setUser(newUser);
                 InstaProfileUI profileUI = new InstaProfileUI(newUser);
                 // UIfactory uIfactory = GlobalConfig.getConfigUIfactory();
                 // NavigationPanel navigationPanel = new NavigationPanel(uIfactory.getPrimaryColor());
