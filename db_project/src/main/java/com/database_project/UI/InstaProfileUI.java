@@ -15,12 +15,18 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.stream.Stream;
 import java.awt.event.MouseEvent;
 
+import javax.sql.DataSource;
 import javax.swing.*;
 
 import com.database_project.UI.Config.GlobalConfig;
+import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
 import com.database_project.UI.utils.Debug;
@@ -48,6 +54,7 @@ public class InstaProfileUI extends JFrame{
     boolean isCurrentUser = false;
     private LoggedUserSingleton loggedUserInstance = LoggedUserSingleton.getInstance();
     String loggedInUsername = "";
+    DataSource dataSource = DBConnectionPool.getDataSource();
 
     public InstaProfileUI(User user) {
         UIfactory uifactory = GlobalConfig.getConfigUIfactory();
@@ -171,24 +178,12 @@ public class InstaProfileUI extends JFrame{
             followButton = new JButton("Follow");
 
             // Check if the current user is already being followed by the logged-in user
-            Path followingFilePath = Paths.get("db_project","data","following.txt");
-            try (BufferedReader reader = Files.newBufferedReader(followingFilePath)) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split(":");
-                    if (parts[0].trim().equals(loggedInUsername)) {
-                        String[] followedUsers = parts[1].split(";");
-                        for (String followedUser : followedUsers) {
-                            if (followedUser.trim().equals(currentUser.getUsername())) {
-                                followButton.setText("Following");
-                                break;
-                            }
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            int loggedUserID = loggedUserInstance.getLoggedUser().getUserId(); 
+
+            if(isUserFollowingAnotherUser(loggedUserID, currentUser.getUserId())){
+                followButton.setText("Following");
             }
+
             followButton.addActionListener(e -> {
                 handleFollowAction(currentUser.getUsername());
                 followButton.setText("Following");
@@ -209,6 +204,33 @@ public class InstaProfileUI extends JFrame{
         statsFollowPanel.add(followButton);
 
         return statsFollowPanel;
+    }
+
+    private boolean isUserFollowingAnotherUser(int loggedUserID, int currentUserID){
+        try{
+            Connection connection = dataSource.getConnection();
+
+            String query = """
+                            SELECT EXISTS (
+                                SELECT 1 
+                                FROM follows 
+                                WHERE following_user_id = ? AND followed_user_id = ?) 
+                                AS is_following
+                            """;
+            PreparedStatement isFollowingStmt = connection.prepareStatement(query);
+            isFollowingStmt.setInt(1, loggedUserID);
+            isFollowingStmt.setInt(2, currentUserID);
+            ResultSet resultSet = isFollowingStmt.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getBoolean("row_exists");
+            } 
+            
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     private JPanel createProfileNameAndBio(){
