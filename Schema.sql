@@ -58,19 +58,19 @@ CREATE TABLE follows (
 
 INSERT INTO users (username, password, bio, profile_path)
 VALUES
-('john_doe', 'password123', 'Just another tech enthusiast.', 'john_doe.jpg'),
-('jane_smith', 'password123', 'Lover of nature and photography.', 'jane_smith.jpg'),
-('bob_johnson', 'password123', 'Avid reader and writer.', 'bob_johnson.jpg'),
-('alice_wonder', 'password123', 'Traveler and foodie.', 'alice_wonder.jpg'),
-('Username', 'Password', 'Comic book artist and collector.', 'Username.jpg');
+('john_doe', 'password123', 'Just another tech enthusiast.', 'john_doe.png'),
+('jane_smith', 'password123', 'Lover of nature and photography.', 'jane_smith.png'),
+('bob_johnson', 'password123', 'Avid reader and writer.', 'bob_johnson.png'),
+('alice_wonder', 'password123', 'Traveler and foodie.', 'alice_wonder.png'),
+('Username', 'Password', 'Comic book artist and collector.', 'Username.png');
 
 INSERT INTO posts (title, bio, user_id, backdrop_path)
 VALUES
-('My First Post', 'This is the bio of my first post.', 1, 'post1.jpg'),
-('Nature Photography', 'Capturing the beauty of nature.', 2, 'post2.jpg'),
-('Book Recommendations', 'My top 5 books to read this year.', 3, 'post3.jpg'),
-('Travel Diary', 'My journey through Europe.', 4, 'post4.jpg'),
-('Comic Art', 'Latest artwork from my comic series.', 5, 'post5.jpg');
+('My First Post', 'This is the bio of my first post.', 1, 'post1.png'),
+('Nature Photography', 'Capturing the beauty of nature.', 2, 'post2.png'),
+('Book Recommendations', 'My top 5 books to read this year.', 3, 'post3.png'),
+('Travel Diary', 'My journey through Europe.', 4, 'post4.png'),
+('Comic Art', 'Latest artwork from my comic series.', 5, 'post5.png');
 
 INSERT INTO comments (post_id, user_id, comment_text)
 VALUES
