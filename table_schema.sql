@@ -23,7 +23,8 @@ CREATE TABLE `posts` (
   `bio` text COMMENT 'Description',
   `user_id` integer,
   `created_at` timestamp,
-  `backdrop_path` varchar(255) COMMENT 'path of the iamge'
+  `backdrop_path` varchar(255) COMMENT 'path of the iamge',
+  `comments` varchar(255) COMMENT 'This stores the comments ids'
 );
 
 CREATE TABLE `notifications` (
@@ -32,6 +33,13 @@ CREATE TABLE `notifications` (
   `user_id` integer,
   `target_id` integer,
   `created_at` timestamp
+);
+
+CREATE TABLE `comments` (
+  `comment_id` integer PRIMARY KEY AUTO_INCREMENT,
+  `post_id` integer,
+  `user_id` integer,
+  `comment_text` varchar(255)
 );
 
 ALTER TABLE `posts` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
@@ -43,3 +51,5 @@ ALTER TABLE `follows` ADD FOREIGN KEY (`followed_user_id`) REFERENCES `users` (`
 ALTER TABLE `notifications` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`post_id`);
 
 ALTER TABLE `notifications` ADD FOREIGN KEY (`user_id`) REFERENCES `posts` (`user_id`);
+
+ALTER TABLE `comments` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`post_id`);
