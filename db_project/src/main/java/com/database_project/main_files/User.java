@@ -31,7 +31,6 @@ public class User {
         this.bio = bio;
         this.password = password;
         this.pictures = new ArrayList<>();
-        // Initialize counts to 0
         this.postsCount = postsCount;
         this.followersCount = followersCount;
         this.followingCount = followingCount;

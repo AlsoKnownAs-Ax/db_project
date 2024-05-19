@@ -19,9 +19,11 @@ import javax.swing.JPanel;
 import com.database_project.UI.InstaProfileUI;
 import com.database_project.UI.Config.GlobalConfig;
 import com.database_project.managers.NavigationManager;
+import com.database_project.main_files.LoggedUserSingleton;
 import com.database_project.main_files.User;
 
 public class NavigationPanel{
+    LoggedUserSingleton loggedUserInstance = LoggedUserSingleton.getInstance();
 
     enum Pages{
         HOME,
@@ -104,23 +106,8 @@ public class NavigationPanel{
     }
     
     private void openProfileUI() {
-        String loggedInUsername = readLoggedInUsername();
-        User user = new User(loggedInUsername);
+        User user = loggedUserInstance.getLoggedUser();
         InstaProfileUI profileUI = new InstaProfileUI(user);
         openUI(profileUI);
-    }
-    
-    //refactoring: extracted the method to only have one functionality
-    private String readLoggedInUsername() {
-        String loggedInUsername = "";
-        try (BufferedReader reader = Files.newBufferedReader(Paths.get("db_project","data","users.txt"))) {
-            String line = reader.readLine();
-            if (line != null) {
-                loggedInUsername = line.split(":")[0].trim();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return loggedInUsername;
     }
 }
