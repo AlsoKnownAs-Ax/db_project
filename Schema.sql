@@ -62,7 +62,7 @@ VALUES
 ('jane_smith', 'password123', 'Lover of nature and photography.', 'jane_smith.jpg'),
 ('bob_johnson', 'password123', 'Avid reader and writer.', 'bob_johnson.jpg'),
 ('alice_wonder', 'password123', 'Traveler and foodie.', 'alice_wonder.jpg'),
-('charlie_brown', 'password123', 'Comic book artist and collector.', 'charlie_brown.jpg');
+('Username', 'Password', 'Comic book artist and collector.', 'Username.jpg');
 
 INSERT INTO posts (title, bio, user_id, backdrop_path)
 VALUES
