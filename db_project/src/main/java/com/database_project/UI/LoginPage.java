@@ -6,7 +6,12 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 
 import javax.sql.DataSource;
 import javax.swing.*;
@@ -117,30 +122,56 @@ public class LoginPage extends JFrame {
     }
 
     private boolean verifyCredentials(String username, String password) {
-        try (var connection = dataSource.getConnection()) {
-            var query = "SELECT * FROM users WHERE username = ? AND password = ?";
-            try (var statement = connection.prepareStatement(query)) {
-                statement.setString(1, username);
-                statement.setString(2, password);
-                var result = statement.executeQuery();
-                if (result.next()) {
-                    int user_id = result.getInt("id");
-                    String bio = result.getString("bio");
-                    int postsCount = result.getInt("posts");
-                    int followersCount = result.getInt("followers");
-                    int followingCount = result.getInt("following");
+        Connection connection = null;
+        PreparedStatement getUserStmt = null;
+        CallableStatement getUserStatsStmt = null;
 
-                    newUser = new User(user_id, username, bio, password, postsCount, followersCount, followingCount);
-                    
-                    return true;
-                }
+        try {
+            connection = dataSource.getConnection();
+
+            String getUserSql = "SELECT id, bio FROM users WHERE username = ? AND password = ?";
+            getUserStmt = connection.prepareStatement(getUserSql);
+            getUserStmt.setString(1, username);
+            getUserStmt.setString(2, password);
+            ResultSet resultSet = getUserStmt.executeQuery();
+
+            if (resultSet.next()) {
+                int userId = resultSet.getInt("id");
+                String bio = resultSet.getString("bio");
+
+                String getUserStatsSql = "{CALL get_user_stats(?, ?, ?, ?)}";
+                getUserStatsStmt = connection.prepareCall(getUserStatsSql);
+                getUserStatsStmt.setInt(1, userId);
+                getUserStatsStmt.registerOutParameter(2, Types.INTEGER);
+                getUserStatsStmt.registerOutParameter(3, Types.INTEGER);
+                getUserStatsStmt.registerOutParameter(4, Types.INTEGER);
+                getUserStatsStmt.execute();
+
+                int followersCount = getUserStatsStmt.getInt(2);
+                int followingCount = getUserStatsStmt.getInt(3);
+                int postsCount = getUserStatsStmt.getInt(4);
+
+                debug.print("User stats", "followers: " + followersCount, "following: " + followingCount, "posts: " + postsCount);
+
+                newUser = new User(userId, username, bio, password, postsCount, followersCount, followingCount);
+
+                return true;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                if (getUserStmt != null) getUserStmt.close();
+                if (getUserStatsStmt != null) getUserStatsStmt.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
         return false;
     }
+
 
     //THIS IS SUPPOSED TO STORE THE CONNECTED USER TO CHECK IF WE ARE ONE SOMEBODY'S PROFILE OR OURS
     // private void saveUserInformation(User user) {

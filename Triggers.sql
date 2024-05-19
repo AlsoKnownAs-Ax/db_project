@@ -12,6 +12,7 @@ DELIMITER $$
 
 CREATE FUNCTION get_follower_count(user_id INT) 
 RETURNS INT
+READS SQL DATA
 BEGIN
     DECLARE follower_count INT;
     SELECT COUNT(*) INTO follower_count FROM follows WHERE followed_user_id = user_id;
