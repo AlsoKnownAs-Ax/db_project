@@ -1,22 +1,31 @@
 
 package com.database_project.main_files;
+
 import java.util.List;
 import java.util.ArrayList;
 
 // Represents a picture on Quackstagram
-class Picture {
+public class Picture {
+    private static final String BASE_PATH = "img/uploaded/";
+
     private String imagePath;
     private String caption;
     private int likesCount;
     private List<String> comments;
 
-    public Picture(String imagePath, String caption) {
-        this.imagePath = imagePath;
+    public Picture(String pictureName, String caption) {
+        this.imagePath = getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
         this.caption = caption;
         this.likesCount = 0;
         this.comments = new ArrayList<>();
     }
 
+    public Picture(String pictureName, String caption, int likes) {
+        this.imagePath = getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
+        this.caption = caption;
+        this.likesCount = likes;
+        this.comments = new ArrayList<>();
+    }
     // Add a comment to the picture
     public void addComment(String comment) {
         comments.add(comment);

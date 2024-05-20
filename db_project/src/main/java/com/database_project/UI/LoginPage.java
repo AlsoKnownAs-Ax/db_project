@@ -11,7 +11,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 
 import javax.sql.DataSource;
 import javax.swing.*;
@@ -129,31 +128,21 @@ public class LoginPage extends JFrame {
         try {
             connection = dataSource.getConnection();
 
-            String getUserSql = "SELECT id, bio FROM users WHERE username = ? AND password = ?";
+            String getUserSql = """
+                SELECT EXISTS (
+                    SELECT 1 
+                    FROM users 
+                    WHERE username = ? AND password = ?) 
+                    AS user_exists
+                """;
             getUserStmt = connection.prepareStatement(getUserSql);
             getUserStmt.setString(1, username);
             getUserStmt.setString(2, password);
             ResultSet resultSet = getUserStmt.executeQuery();
 
             if (resultSet.next()) {
-                int userId = resultSet.getInt("id");
-                String bio = resultSet.getString("bio");
-
-                String getUserStatsSql = "{CALL get_user_stats(?, ?, ?, ?)}";
-                getUserStatsStmt = connection.prepareCall(getUserStatsSql);
-                getUserStatsStmt.setInt(1, userId);
-                getUserStatsStmt.registerOutParameter(2, Types.INTEGER);
-                getUserStatsStmt.registerOutParameter(3, Types.INTEGER);
-                getUserStatsStmt.registerOutParameter(4, Types.INTEGER);
-                getUserStatsStmt.execute();
-
-                int followersCount = getUserStatsStmt.getInt(2);
-                int followingCount = getUserStatsStmt.getInt(3);
-                int postsCount = getUserStatsStmt.getInt(4);
-
-                debug.print("User stats", "followers: " + followersCount, "following: " + followingCount, "posts: " + postsCount);
-
-                newUser = new User(userId, username, bio, password, postsCount, followersCount, followingCount);
+                resultSet.getBoolean("user_exists");
+                newUser = new User(username);
 
                 return true;
             }

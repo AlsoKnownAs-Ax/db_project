@@ -8,18 +8,14 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.stream.Stream;
+import java.util.List;
 import java.awt.event.MouseEvent;
 
 import javax.sql.DataSource;
@@ -32,6 +28,7 @@ import com.database_project.UI.factory.UIfactory;
 import com.database_project.UI.utils.Debug;
 import com.database_project.managers.NavigationManager;
 import com.database_project.main_files.LoggedUserSingleton;
+import com.database_project.main_files.Picture;
 import com.database_project.main_files.User;
 
 public class InstaProfileUI extends JFrame{
@@ -319,28 +316,42 @@ public class InstaProfileUI extends JFrame{
         contentPanel.setLayout(new GridLayout(0, 3, 5, 5)); // Grid layout for image grid
         contentPanel.setBackground(this.secondaryColor);
 
-        Path imageDir;
-        try {
-            imageDir = getImageDirPath();
-            try (Stream<Path> paths = Files.list(imageDir)) {
-                paths.filter(path -> path.getFileName().toString().startsWith(currentUser.getUsername() + "_"))
-                    .forEach(path -> {
-                        ImageIcon imageIcon = new ImageIcon(new ImageIcon(path.toString()).getImage().getScaledInstance(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE, Image.SCALE_SMOOTH));
-                        JLabel imageLabel = new JLabel(imageIcon);
-                        imageLabel.addMouseListener(new MouseAdapter() {
-                            @Override
-                            public void mouseClicked(MouseEvent e) {
-                                displayImage(imageIcon); // Call method to display the clicked image
-                            }
-                        });
-                        contentPanel.add(imageLabel);
-                    });
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        // Path imageDir;
+        // try {
+        //     imageDir = getImageDirPath();
+        //     try (Stream<Path> paths = Files.list(imageDir)) {
+        //         paths.filter(path -> path.getFileName().toString().startsWith(currentUser.getUsername() + "_"))
+        //             .forEach(path -> {
+        //                 ImageIcon imageIcon = new ImageIcon(new ImageIcon(path.toString()).getImage().getScaledInstance(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE, Image.SCALE_SMOOTH));
+        //                 JLabel imageLabel = new JLabel(imageIcon);
+        //                 imageLabel.addMouseListener(new MouseAdapter() {
+        //                     @Override
+        //                     public void mouseClicked(MouseEvent e) {
+        //                         displayImage(imageIcon); // Call method to display the clicked image
+        //                     }
+        //                 });
+        //                 contentPanel.add(imageLabel);
+        //             });
+        //     } catch (IOException ex) {
+        //         ex.printStackTrace();
+        //     }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // }
+        List<Picture> pictures = currentUser.getPictures();
+
+        for (Picture picture : pictures) {
+            ImageIcon imageIcon = new ImageIcon(new ImageIcon(picture.getImagePath()).getImage().getScaledInstance(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE, Image.SCALE_SMOOTH));
+            JLabel imageLabel = new JLabel(imageIcon);
+            imageLabel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    displayImage(imageIcon);
+                }
+            });
+            contentPanel.add(imageLabel);
         }
+
 
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -351,7 +362,6 @@ public class InstaProfileUI extends JFrame{
         revalidate();
         repaint();
     }
-
 
 
     private void displayImage(ImageIcon imageIcon) {
