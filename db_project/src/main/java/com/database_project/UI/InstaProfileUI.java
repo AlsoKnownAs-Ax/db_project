@@ -261,7 +261,6 @@ public class InstaProfileUI extends JFrame{
         int loggedUserID = loggedUser.getUserId();
         int target_id = userToFollow.getUserId();
     
-        
         try {
             followUser(loggedUserID, target_id);
             debug.print("Following Action Fired", "Started following: " + loggedUser.getUsername() + " -> " + userToFollow.getUsername());
