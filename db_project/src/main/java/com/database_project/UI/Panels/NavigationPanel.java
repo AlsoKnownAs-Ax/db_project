@@ -2,11 +2,7 @@ package com.database_project.UI.Panels;
 
 import java.awt.Color;
 import java.awt.Image;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
