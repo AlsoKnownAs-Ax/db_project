@@ -1,9 +1,9 @@
 DELIMITER $$
 
-CREATE PROCEDURE notify_new_post(IN post_id INT, IN user_id INT)
+CREATE PROCEDURE notify_new_post(IN post_id INT, IN user_id INT,IN target_id INT)
 BEGIN
     INSERT INTO notifications (post_id, user_id, target_id)
-    VALUES (post_id, user_id, user_id);
+    VALUES (post_id, user_id, target_id);
 END $$
 
 DELIMITER ;
