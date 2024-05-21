@@ -1,6 +1,6 @@
 DELIMITER $$
 
-CREATE PROCEDURE get_user_stats(IN userId INT, OUT followers_count INT, OUT following_count INT, OUT posts_count INT)
+CREATE PROCEDURE get_user_stats(IN userId INT, OUT followers_count INT, OUT following_count INT)
 BEGIN
     DECLARE temp_followers_count INT;
     DECLARE temp_following_count INT;

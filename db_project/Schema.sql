@@ -11,7 +11,6 @@ CREATE TABLE users (
 CREATE TABLE posts (
     post_id INT AUTO_INCREMENT PRIMARY KEY,
     likes INT DEFAULT 0,
-    title VARCHAR(255) NOT NULL,
     bio TEXT,
     user_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -64,13 +63,13 @@ VALUES
 ('alice_wonder', 'password123', 'Traveler and foodie.', 'alice_wonder.png'),
 ('Username', 'Password', 'Comic book artist and collector.', 'Username.png');
 
-INSERT INTO posts (title, bio, user_id, backdrop_path)
+INSERT INTO posts (bio, user_id, backdrop_path)
 VALUES
-('My First Post', 'This is the bio of my first post.', 1, 'post1.png'),
-('Nature Photography', 'Capturing the beauty of nature.', 2, 'post2.png'),
-('Book Recommendations', 'My top 5 books to read this year.', 3, 'post3.png'),
-('Travel Diary', 'My journey through Europe.', 4, 'post4.png'),
-('Comic Art', 'Latest artwork from my comic series.', 5, 'post5.png');
+('This is the bio of my first post.', 1, 'post1.png'),
+(' the beauty of nature.', 2, 'post2.png'),
+('My top 5 books to read this year.', 3, 'post3.png'),
+(' journey through Europe.', 4, 'post4.png'),
+('Latest artwork from my comic series.', 5, 'post5.png');
 
 INSERT INTO comments (post_id, user_id, comment_text)
 VALUES

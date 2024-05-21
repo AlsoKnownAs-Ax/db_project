@@ -27,7 +27,7 @@ CREATE TRIGGER after_post_insert
 AFTER INSERT ON posts
 FOR EACH ROW
 BEGIN
-    CALL notify_new_post(NEW.post_id, NEW.user_id);
+    CALL notify_new_post(NEW.post_id, NEW.user_id, NEW.target_id);
 END $$
 
 DELIMITER ;

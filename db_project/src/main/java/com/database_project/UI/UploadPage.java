@@ -1,11 +1,15 @@
 package com.database_project.UI;
 
+import javax.sql.DataSource;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.database_project.UI.Config.GlobalConfig;
+import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
+import com.database_project.main_files.LoggedUserSingleton;
+import com.database_project.main_files.User;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -14,6 +18,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -25,6 +31,9 @@ public class UploadPage extends JFrame {
     private JTextArea bioTextArea;
     private JButton uploadButton;
     private JButton saveButton;
+
+    private LoggedUserSingleton loggedUserSingleton = LoggedUserSingleton.getInstance();
+    private DataSource dataSource = DBConnectionPool.getDataSource();
 
     //COLORS
     private Color HeaderBackground;
@@ -135,16 +144,19 @@ public class UploadPage extends JFrame {
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             try {
-                String username = readUsername(); // Read username from users.txt
-                int imageId = getNextImageId(username);
+                User loggedUser = loggedUserSingleton.getLoggedUser();
+
+                int imageId = getNextImageID();
                 String fileExtension = getFileExtension(selectedFile);
-                String newFileName = username + "_" + imageId + "." + fileExtension;
+                String newFileName = "post_" + imageId + "." + fileExtension;
     
                 Path destPath = Paths.get("img", "uploaded", newFileName);
                 Files.copy(selectedFile.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
     
-                // Save the bio and image ID to a text file
-                saveImageInfo(username + "_" + imageId, username, bioTextArea.getText());
+                if(!saveImageInfo(newFileName, loggedUser, bioTextArea.getText())) {
+                    JOptionPane.showMessageDialog(this, "Error saving image information", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
     
                 // Load the image from the saved path
                 ImageIcon imageIcon = new ImageIcon(destPath.toString());
@@ -183,45 +195,47 @@ public class UploadPage extends JFrame {
         }
     }
     
-    private int getNextImageId(String username) throws IOException {
-        Path storageDir = Paths.get("/img", "uploaded"); // Ensure this is the directory where images are saved
-        if (!Files.exists(storageDir)) {
-            Files.createDirectories(storageDir);
-        }
-    
-        int maxId = 0;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(storageDir, username + "_*")) {
-            for (Path path : stream) {
-                String fileName = path.getFileName().toString();
-                int idEndIndex = fileName.lastIndexOf('.');
-                if (idEndIndex != -1) {
-                    String idStr = fileName.substring(username.length() + 1, idEndIndex);
-                    try {
-                        int id = Integer.parseInt(idStr);
-                        if (id > maxId) {
-                            maxId = id;
-                        }
-                    } catch (NumberFormatException ex) {
-                        // Ignore filenames that do not have a valid numeric ID
-                    }
+    private int getNextImageID() {
+        try {
+            Connection connection = dataSource.getConnection();
+            String query = """
+                    SELECT MAX(post_id) AS max_id FROM posts
+                    """;
+            try (var statement = connection.prepareStatement(query)) {
+                ResultSet resultSet = statement.executeQuery();
+                if (resultSet.next()) {
+                    return resultSet.getInt("max_id") + 1;
                 }
             }
+        } catch (Exception e) {
+            System.out.println("Error getting the next image ID: " + e.getMessage());
         }
-        return maxId + 1; // Return the next available ID
+
+        return 0;
     }
     
-    private void saveImageInfo(String imageId, String username, String bio) throws IOException {
-        Path infoFilePath = Paths.get("img", "/img/image_details.txt");
-        if (!Files.exists(infoFilePath)) {
-            Files.createFile(infoFilePath);
+    private boolean saveImageInfo(String backdrop_path, User user, String post_bio) throws IOException {
+        try {
+            Connection connection = dataSource.getConnection();
+            int uid = user.getUserId();
+            String query = """
+                    INSERT INTO posts (likes, bio, user_id, backdrop_path)
+                    VALUES (?, ?, ?, ?)
+                    """;
+            var statement = connection.prepareStatement(query);
+            
+            statement.setInt(1, 0);
+            statement.setString(2, post_bio);
+            statement.setInt(3, uid);
+            statement.setString(4, backdrop_path);
+            statement.executeUpdate();
+
+            return true;
+        } catch (Exception e) {
+            System.out.println("Failed to save image information: " + e.getMessage());
         }
-    
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-    
-        try (BufferedWriter writer = Files.newBufferedWriter(infoFilePath, StandardOpenOption.APPEND)) {
-            writer.write(String.format("ImageID: %s, Username: %s, Bio: %s, Timestamp: %s, Likes: 0", imageId, username, bio, timestamp));
-            writer.newLine();
-        }
+
+        return false;
     }
 
 

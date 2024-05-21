@@ -110,9 +110,6 @@ public class LoginPage extends JFrame {
 
                 LoggedUserSingleton.getInstance().setUser(newUser);
                 InstaProfileUI profileUI = new InstaProfileUI(newUser);
-                // UIfactory uIfactory = GlobalConfig.getConfigUIfactory();
-                // NavigationPanel navigationPanel = new NavigationPanel(uIfactory.getPrimaryColor());
-                // navigationPanel.setCurrentProfilePage(profileUI);
                 profileUI.setVisible(true);
             });
         } else {

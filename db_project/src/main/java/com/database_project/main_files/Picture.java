@@ -14,18 +14,27 @@ public class Picture {
     private List<String> comments;
 
     public Picture(String pictureName, String caption) {
-        this.imagePath = getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
+        this.imagePath = getImagePath(pictureName);
         this.caption = caption;
         this.likesCount = 0;
         this.comments = new ArrayList<>();
     }
 
     public Picture(String pictureName, String caption, int likes) {
-        this.imagePath = getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
+        this.imagePath = getImagePath(pictureName);
         this.caption = caption;
         this.likesCount = likes;
         this.comments = new ArrayList<>();
     }
+
+    private String getImagePath(String pictureName){
+        try {
+            return getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid picture name \n" + e.getMessage());
+        }
+    }
+    
     // Add a comment to the picture
     public void addComment(String comment) {
         comments.add(comment);
