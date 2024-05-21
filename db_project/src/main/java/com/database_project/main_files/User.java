@@ -51,7 +51,7 @@ public class User {
         pictures.add(picture);
     }
 
-    private boolean fetchUserPosts(int user_id){
+    public boolean fetchUserPosts(int user_id){
         this.pictures = new ArrayList<>();
 
         Connection connection = null;
@@ -155,6 +155,10 @@ public class User {
     public void setFollowersCount(int followersCount) { this.followersCount = followersCount; }
     public void setFollowingCount(int followingCount) { this.followingCount = followingCount; }
     // Implement the toString method for saving user information
+
+    public void addPost(Picture picture) {
+        this.pictures.add(picture);
+    }
     
     @Override
     public String toString() {

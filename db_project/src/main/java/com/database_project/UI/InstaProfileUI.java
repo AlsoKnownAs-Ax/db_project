@@ -1,4 +1,5 @@
 package com.database_project.UI;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -9,8 +10,6 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -298,46 +297,11 @@ public class InstaProfileUI extends JFrame{
         return navigationPanel;
     }
 
-    public Path getImageDirPath() throws Exception {
-        ClassLoader classLoader = this.getClass().getClassLoader();
-        URL resourceUrl = classLoader.getResource("img/uploaded");
-
-        if (resourceUrl == null) {
-            throw new Exception("Resource not found: img/uploaded");
-        }
-
-        Path imageDir = Paths.get(resourceUrl.toURI());
-
-        return imageDir;
-    }
-
     private void initializeImageGrid() {
         contentPanel.removeAll(); // Clear existing content
         contentPanel.setLayout(new GridLayout(0, 3, 5, 5)); // Grid layout for image grid
         contentPanel.setBackground(this.secondaryColor);
 
-        // Path imageDir;
-        // try {
-        //     imageDir = getImageDirPath();
-        //     try (Stream<Path> paths = Files.list(imageDir)) {
-        //         paths.filter(path -> path.getFileName().toString().startsWith(currentUser.getUsername() + "_"))
-        //             .forEach(path -> {
-        //                 ImageIcon imageIcon = new ImageIcon(new ImageIcon(path.toString()).getImage().getScaledInstance(GRID_IMAGE_SIZE, GRID_IMAGE_SIZE, Image.SCALE_SMOOTH));
-        //                 JLabel imageLabel = new JLabel(imageIcon);
-        //                 imageLabel.addMouseListener(new MouseAdapter() {
-        //                     @Override
-        //                     public void mouseClicked(MouseEvent e) {
-        //                         displayImage(imageIcon); // Call method to display the clicked image
-        //                     }
-        //                 });
-        //                 contentPanel.add(imageLabel);
-        //             });
-        //     } catch (IOException ex) {
-        //         ex.printStackTrace();
-        //     }
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        // }
         List<Picture> pictures = currentUser.getPictures();
 
         for (Picture picture : pictures) {

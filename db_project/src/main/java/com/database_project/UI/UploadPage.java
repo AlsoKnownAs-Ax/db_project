@@ -9,22 +9,19 @@ import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
 import com.database_project.main_files.LoggedUserSingleton;
+import com.database_project.main_files.Picture;
 import com.database_project.main_files.User;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 public class UploadPage extends JFrame {
-
     private static final int WIDTH = GlobalConfig.getWidth();
     private static final int HEIGHT = GlobalConfig.getHeight();
     private JLabel imagePreviewLabel;
@@ -34,6 +31,7 @@ public class UploadPage extends JFrame {
 
     private LoggedUserSingleton loggedUserSingleton = LoggedUserSingleton.getInstance();
     private DataSource dataSource = DBConnectionPool.getDataSource();
+
 
     //COLORS
     private Color HeaderBackground;
@@ -143,14 +141,15 @@ public class UploadPage extends JFrame {
         int returnValue = fileChooser.showOpenDialog(null);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
+
             try {
                 User loggedUser = loggedUserSingleton.getLoggedUser();
 
                 int imageId = getNextImageID();
                 String fileExtension = getFileExtension(selectedFile);
-                String newFileName = "post_" + imageId + "." + fileExtension;
-    
-                Path destPath = Paths.get("img", "uploaded", newFileName);
+                String newFileName = "post" + imageId + "." + fileExtension;
+                
+                Path destPath = getSavingDirectoryPath(newFileName);
                 Files.copy(selectedFile.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
     
                 if(!saveImageInfo(newFileName, loggedUser, bioTextArea.getText())) {
@@ -182,10 +181,6 @@ public class UploadPage extends JFrame {
     
                 imagePreviewLabel.setIcon(imageIcon);
     
-                // Update the flag to indicate that an image has been uploaded
-                // imageUploaded = true;
-    
-                // Change the text of the upload button
                 uploadButton.setText("Upload Another Image");
     
                 JOptionPane.showMessageDialog(this, "Image uploaded and preview updated!");
@@ -194,6 +189,22 @@ public class UploadPage extends JFrame {
             }
         }
     }
+
+    private Path getSavingDirectoryPath(String newFileName){
+        URL resourceUrl = UploadPage.class.getClassLoader().getResource("img/uploaded");
+
+        if (resourceUrl != null) {
+            try {
+                Path destPath = Paths.get(resourceUrl.toURI()).resolve(newFileName);
+            
+                return destPath;
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return null;
+    } 
     
     private int getNextImageID() {
         try {
@@ -229,6 +240,8 @@ public class UploadPage extends JFrame {
             statement.setInt(3, uid);
             statement.setString(4, backdrop_path);
             statement.executeUpdate();
+
+            loggedUserSingleton.getLoggedUser().addPost(new Picture(backdrop_path, post_bio));
 
             return true;
         } catch (Exception e) {
@@ -267,17 +280,6 @@ public class UploadPage extends JFrame {
         headerPanel.add(lblRegister);
         headerPanel.setPreferredSize(new Dimension(WIDTH, 40)); // Give the header a fixed height
         return headerPanel;
-    }
-
-    private String readUsername() throws IOException {
-        Path usersFilePath = Paths.get("db_project","data","users.txt");
-        try (BufferedReader reader = Files.newBufferedReader(usersFilePath)) {
-            String line = reader.readLine();
-            if (line != null) {
-                return line.split(":")[0]; // Extract the username from the first line
-            }
-        }
-        return null; // Return null if no username is found
     }
 
     private NavigationPanel navigationPanelCreator;
