@@ -8,19 +8,22 @@ import java.util.ArrayList;
 public class Picture {
     private static final String BASE_PATH = "img/uploaded/";
 
+    private int pictureID;
     private String imagePath;
     private String caption;
     private int likesCount;
     private List<String> comments;
 
-    public Picture(String pictureName, String caption) {
+    public Picture(int pictureID, String pictureName, String caption) {
+        this.pictureID = pictureID;
         this.imagePath = getImagePath(pictureName);
         this.caption = caption;
         this.likesCount = 0;
         this.comments = new ArrayList<>();
     }
 
-    public Picture(String pictureName, String caption, int likes) {
+    public Picture(int pictureID, String pictureName, String caption, int likes) {
+        this.pictureID = pictureID;
         this.imagePath = getImagePath(pictureName);
         this.caption = caption;
         this.likesCount = likes;
@@ -31,7 +34,7 @@ public class Picture {
         try {
             return getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid picture name \n" + e.getMessage());
+            throw new IllegalArgumentException("Invalid picture name \n" + e.getMessage() + "\n" + "for picture: " + pictureName);
         }
     }
     
@@ -50,4 +53,5 @@ public class Picture {
     public String getCaption() { return caption; }
     public int getLikesCount() { return likesCount; }
     public List<String> getComments() { return comments; }
+    public int getPictureID() { return pictureID; }
 }

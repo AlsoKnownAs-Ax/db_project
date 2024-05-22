@@ -69,7 +69,8 @@ public class User {
                 String pictureName = resultSet.getString("backdrop_path");
                 String bio = resultSet.getString("bio");
                 int likes = resultSet.getInt("likes");
-                Picture picture = new Picture(pictureName, bio, likes);
+                int picture_id = resultSet.getInt("id");
+                Picture picture = new Picture(picture_id, pictureName, bio, likes);
                 this.pictures.add(picture);
             }
 

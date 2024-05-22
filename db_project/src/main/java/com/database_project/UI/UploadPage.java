@@ -32,7 +32,6 @@ public class UploadPage extends JFrame {
     private LoggedUserSingleton loggedUserSingleton = LoggedUserSingleton.getInstance();
     private DataSource dataSource = DBConnectionPool.getDataSource();
 
-
     //COLORS
     private Color HeaderBackground;
     private Color HeaderForeground;
@@ -42,7 +41,6 @@ public class UploadPage extends JFrame {
         UIfactory uifactory = GlobalConfig.getConfigUIfactory();
         this.HeaderBackground=uifactory.getHeaderBackground();
         this.HeaderForeground=uifactory.getHeaderForeground();
-        // this.NavigationBackground=uifactory.getPrimaryColor();
         this.ContentBackground = uifactory.getPrimaryColor();
 
         setTitle("Upload Image");
@@ -152,7 +150,7 @@ public class UploadPage extends JFrame {
                 Path destPath = getSavingDirectoryPath(newFileName);
                 Files.copy(selectedFile.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
     
-                if(!saveImageInfo(newFileName, loggedUser, bioTextArea.getText())) {
+                if(!saveImageInfo(newFileName, loggedUser, bioTextArea.getText(), imageId)) {
                     JOptionPane.showMessageDialog(this, "Error saving image information", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -225,7 +223,7 @@ public class UploadPage extends JFrame {
         return 0;
     }
     
-    private boolean saveImageInfo(String backdrop_path, User user, String post_bio) throws IOException {
+    private boolean saveImageInfo(String backdrop_path, User user, String post_bio, int imageID) throws IOException {
         try {
             Connection connection = dataSource.getConnection();
             int uid = user.getUserId();
@@ -241,7 +239,7 @@ public class UploadPage extends JFrame {
             statement.setString(4, backdrop_path);
             statement.executeUpdate();
 
-            loggedUserSingleton.getLoggedUser().addPost(new Picture(backdrop_path, post_bio));
+            loggedUserSingleton.getLoggedUser().addPost(new Picture(imageID, backdrop_path, post_bio));
 
             return true;
         } catch (Exception e) {

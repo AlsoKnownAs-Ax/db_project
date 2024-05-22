@@ -1,10 +1,13 @@
 package com.database_project.UI;
 import javax.imageio.ImageIO;
+import javax.sql.DataSource;
 import javax.swing.*;
 
 import com.database_project.UI.Config.GlobalConfig;
+import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
+import com.database_project.main_files.Picture;
 import com.database_project.main_files.User;
 
 import java.awt.*;
@@ -16,9 +19,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
 public class ExplorePage extends JFrame {
@@ -32,6 +39,8 @@ public class ExplorePage extends JFrame {
     private static final int WIDTH = GlobalConfig.getWidth();
     private static final int HEIGHT = GlobalConfig.getHeight();
     private static final int IMAGE_SIZE = GlobalConfig.getImageSize(); // Size for each image in the grid
+
+    private DataSource dataSource = DBConnectionPool.getDataSource();
 
 
     public ExplorePage() {
@@ -101,29 +110,66 @@ public class ExplorePage extends JFrame {
     }
 
     private JPanel createExploreImageGrid(){
-        // Image Grid
         JPanel imageGridPanel = new JPanel(new GridLayout(0, 3, 2, 2)); // 3 columns, auto rows
         imageGridPanel.setBackground(this.secondaryColor); 
-        // Load images from the uploaded folder
-        File imageDir = new File("/img/uploaded");
+
+        String uploadedImagesDirectory = getUploadedImagesPath();
+        File imageDir = new File( uploadedImagesDirectory );
+
         if (imageDir.exists() && imageDir.isDirectory()) {
-            File[] imageFiles = imageDir.listFiles((dir, name) -> name.matches(".*\\.(png|jpg|jpeg)"));
-            if (imageFiles != null) {
-                for (File imageFile : imageFiles) {
-                    ImageIcon imageIcon = new ImageIcon(new ImageIcon(imageFile.getPath()).getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH));
-                    JLabel imageLabel = new JLabel(imageIcon);
-                    imageLabel.addMouseListener(new MouseAdapter() {
-                        @Override
-                        public void mouseClicked(MouseEvent e) {
-                            displayImage(imageFile.getPath()); // Call method to display the clicked image
-                        }
-                    });
-                    imageGridPanel.add(imageLabel);
-                }
+            ArrayList<Picture> randomPictures = getRandomImages(9);
+            if (randomPictures.isEmpty()) {
+                return imageGridPanel;
             }
+            
+            for (Picture picture : randomPictures) {
+                String imagePath = picture.getImagePath();
+                ImageIcon imageIcon = new ImageIcon(new ImageIcon(imagePath).getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH));
+                JLabel imageLabel = new JLabel(imageIcon);
+                imageLabel.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        displayImage(picture); // Call method to display the clicked image
+                    }
+                });
+                imageGridPanel.add(imageLabel);
+            }
+        }else{
+            System.out.println("No directory found");
         }
 
         return imageGridPanel;
+    }
+
+    private String getUploadedImagesPath(){
+        return getClass().getClassLoader().getResource("img/uploaded").getPath();
+    }
+
+    private ArrayList<Picture> getRandomImages(int count) {
+        ArrayList<Picture> pictures = new ArrayList<>();
+
+        try {
+            Connection connection = dataSource.getConnection();
+            String sql = "SELECT * FROM posts ORDER BY RAND() LIMIT ?";
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            stmt.setInt(1, count);
+            ResultSet resultSet = stmt.executeQuery();
+
+            while (resultSet.next()) {
+                String pictureName = resultSet.getString("backdrop_path");
+                String bio = resultSet.getString("bio");
+                int likes = resultSet.getInt("likes");
+                int picture_id = resultSet.getInt("id");
+                Picture picture = new Picture(picture_id, pictureName, bio, likes);
+                pictures.add(picture);
+           }
+
+            return pictures;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
    
@@ -159,128 +205,129 @@ public class ExplorePage extends JFrame {
         return navigationPanel;
     }
 
-   private void displayImage(String imagePath) {
-    getContentPane().removeAll();
-    setLayout(new BorderLayout());
-
-    // Add the header and navigation panels back
-    add(createHeaderPanel(), BorderLayout.NORTH);
-    add(createNavigationPanel(), BorderLayout.SOUTH);
-
-    // Extract image ID from the imagePath
-    String imageId = new File(imagePath).getName().split("\\.")[0];
-    
-    // Read image details
-    String username = "";
-    String bio = "";
-    String timestampString = "";
-    int likes = 0;
-    Path detailsPath = Paths.get("img", "/img/image_details.txt");
-    try (Stream<String> lines = Files.lines(detailsPath)) {
-        String details = lines.filter(line -> line.contains("ImageID: " + imageId)).findFirst().orElse("");
-        if (!details.isEmpty()) {
-            String[] parts = details.split(", ");
-            username = parts[1].split(": ")[1];
-            bio = parts[2].split(": ")[1];
-            timestampString = parts[3].split(": ")[1];
-            likes = Integer.parseInt(parts[4].split(": ")[1]);
-            System.out.println("Image Bio: " + bio + parts[3]);
-        }
-    } catch (IOException ex) {
-        // Handle exception
-        ex.printStackTrace();
-        System.out.println("A error occured while opening the image, Please try again.");
-    }
-
-    // Calculate time since posting
-    String timeSincePosting = CalculateTimeSincePost(timestampString);
-
-    // Top panel for username and time since posting
-    JPanel topPanel = new JPanel(new BorderLayout());
-    JButton usernameLabel = new JButton(username);
-    JLabel timeLabel = new JLabel(timeSincePosting);
-    timeLabel.setForeground(this.textColor);
-    timeLabel.setHorizontalAlignment(JLabel.RIGHT);
-
-    topPanel.add(usernameLabel, BorderLayout.WEST);
-    topPanel.add(timeLabel, BorderLayout.EAST);
-
-
-    // Prepare the image for display
-    JLabel imageLabel = new JLabel();
-    imageLabel.setHorizontalAlignment(JLabel.CENTER);
-    try {
-        BufferedImage originalImage = ImageIO.read(new File(imagePath));
-        ImageIcon imageIcon = new ImageIcon(originalImage);
-        imageLabel.setIcon(imageIcon);
-    } catch (IOException ex) {
-        imageLabel.setText("Image not found");
-    }
-
-    // Bottom panel for bio and likes
-    JPanel bottomPanel = new JPanel(new BorderLayout());
-    JTextArea bioTextArea = new JTextArea(bio);
-    bioTextArea.setForeground(this.textColor);
-    bioTextArea.setBackground(this.primaryColor);
-    bioTextArea.setEditable(false);
-    JLabel likesLabel = new JLabel("Likes: " + likes);
-    bottomPanel.add(bioTextArea, BorderLayout.CENTER);
-    bottomPanel.add(likesLabel, BorderLayout.SOUTH);
-
-    // Adding the components to the frame
-    add(topPanel, BorderLayout.NORTH);
-    add(imageLabel, BorderLayout.CENTER);
-    add(bottomPanel, BorderLayout.SOUTH);
-
-    // Re-add the header and navigation panels
-    add(createHeaderPanel(), BorderLayout.NORTH);
-    add(createNavigationPanel(), BorderLayout.SOUTH);
-
-    // Panel for the back button
-    JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-    JButton backButton = new JButton("Back");
-
-    // Make the button take up the full width
-    backButton.setPreferredSize(new Dimension(WIDTH-20, backButton.getPreferredSize().height));
-
-    backButtonPanel.add(backButton);
-
-    backButton.addActionListener(e -> {
+   private void displayImage(Picture picture) {
+        String imagePath = picture.getImagePath();
         getContentPane().removeAll();
+        setLayout(new BorderLayout());
+
+        // Add the header and navigation panels back
         add(createHeaderPanel(), BorderLayout.NORTH);
-        add(createMainContentPanel(), BorderLayout.CENTER);
         add(createNavigationPanel(), BorderLayout.SOUTH);
+
+        // Extract image ID from the imagePath
+        String imageId = new File(imagePath).getName().split("\\.")[0];
+        
+        // Read image details
+        String username = "";
+        String bio = "";
+        String timestampString = "";
+        int likes = 0;
+        Path detailsPath = Paths.get("img", "/img/image_details.txt");
+        try (Stream<String> lines = Files.lines(detailsPath)) {
+            String details = lines.filter(line -> line.contains("ImageID: " + imageId)).findFirst().orElse("");
+            if (!details.isEmpty()) {
+                String[] parts = details.split(", ");
+                username = parts[1].split(": ")[1];
+                bio = parts[2].split(": ")[1];
+                timestampString = parts[3].split(": ")[1];
+                likes = Integer.parseInt(parts[4].split(": ")[1]);
+                System.out.println("Image Bio: " + bio + parts[3]);
+            }
+        } catch (IOException ex) {
+            // Handle exception
+            ex.printStackTrace();
+            System.out.println("A error occured while opening the image, Please try again.");
+        }
+
+        // Calculate time since posting
+        String timeSincePosting = CalculateTimeSincePost(timestampString);
+
+        // Top panel for username and time since posting
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JButton usernameLabel = new JButton(username);
+        JLabel timeLabel = new JLabel(timeSincePosting);
+        timeLabel.setForeground(this.textColor);
+        timeLabel.setHorizontalAlignment(JLabel.RIGHT);
+
+        topPanel.add(usernameLabel, BorderLayout.WEST);
+        topPanel.add(timeLabel, BorderLayout.EAST);
+
+
+        // Prepare the image for display
+        JLabel imageLabel = new JLabel();
+        imageLabel.setHorizontalAlignment(JLabel.CENTER);
+        try {
+            BufferedImage originalImage = ImageIO.read(new File(imagePath));
+            ImageIcon imageIcon = new ImageIcon(originalImage);
+            imageLabel.setIcon(imageIcon);
+        } catch (IOException ex) {
+            imageLabel.setText("Image not found");
+        }
+
+        // Bottom panel for bio and likes
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        JTextArea bioTextArea = new JTextArea(bio);
+        bioTextArea.setForeground(this.textColor);
+        bioTextArea.setBackground(this.primaryColor);
+        bioTextArea.setEditable(false);
+        JLabel likesLabel = new JLabel("Likes: " + likes);
+        bottomPanel.add(bioTextArea, BorderLayout.CENTER);
+        bottomPanel.add(likesLabel, BorderLayout.SOUTH);
+
+        // Adding the components to the frame
+        add(topPanel, BorderLayout.NORTH);
+        add(imageLabel, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // Re-add the header and navigation panels
+        add(createHeaderPanel(), BorderLayout.NORTH);
+        add(createNavigationPanel(), BorderLayout.SOUTH);
+
+        // Panel for the back button
+        JPanel backButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton backButton = new JButton("Back");
+
+        // Make the button take up the full width
+        backButton.setPreferredSize(new Dimension(WIDTH-20, backButton.getPreferredSize().height));
+
+        backButtonPanel.add(backButton);
+
+        backButton.addActionListener(e -> {
+            getContentPane().removeAll();
+            add(createHeaderPanel(), BorderLayout.NORTH);
+            add(createMainContentPanel(), BorderLayout.CENTER);
+            add(createNavigationPanel(), BorderLayout.SOUTH);
+            revalidate();
+            repaint();
+        });
+        final String finalUsername = username;
+
+        usernameLabel.addActionListener(e -> {
+            User user = new User(finalUsername); // Assuming User class has a constructor that takes a username
+            InstaProfileUI profileUI = new InstaProfileUI(user);
+            profileUI.setVisible(true);
+            dispose(); // Close the current frame
+        });
+
+        // Container panel for image and details
+        JPanel containerPanel = new JPanel(new BorderLayout());
+
+        backButtonPanel.setBackground(this.primaryColor);
+        topPanel.setBackground(this.primaryColor);
+        imageLabel.setBackground(this.primaryColor);
+        bottomPanel.setBackground(this.primaryColor);
+
+        containerPanel.add(topPanel, BorderLayout.NORTH);
+        containerPanel.add(imageLabel, BorderLayout.CENTER);
+        containerPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        // Add the container panel and back button panel to the frame
+        add(backButtonPanel, BorderLayout.NORTH);
+        add(containerPanel, BorderLayout.CENTER);
+
         revalidate();
         repaint();
-    });
-    final String finalUsername = username;
-
-    usernameLabel.addActionListener(e -> {
-        User user = new User(finalUsername); // Assuming User class has a constructor that takes a username
-        InstaProfileUI profileUI = new InstaProfileUI(user);
-        profileUI.setVisible(true);
-        dispose(); // Close the current frame
-    });
-
-    // Container panel for image and details
-    JPanel containerPanel = new JPanel(new BorderLayout());
-
-    backButtonPanel.setBackground(this.primaryColor);
-    topPanel.setBackground(this.primaryColor);
-    imageLabel.setBackground(this.primaryColor);
-    bottomPanel.setBackground(this.primaryColor);
-
-    containerPanel.add(topPanel, BorderLayout.NORTH);
-    containerPanel.add(imageLabel, BorderLayout.CENTER);
-    containerPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-    // Add the container panel and back button panel to the frame
-    add(backButtonPanel, BorderLayout.NORTH);
-    add(containerPanel, BorderLayout.CENTER);
-
-    revalidate();
-    repaint();
-}
+    }
 
    private String CalculateTimeSincePost(String timestampString){
     String timeSincePosting = "";
