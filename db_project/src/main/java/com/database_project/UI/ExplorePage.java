@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -159,8 +160,18 @@ public class ExplorePage extends JFrame {
                 String pictureName = resultSet.getString("backdrop_path");
                 String bio = resultSet.getString("bio");
                 int likes = resultSet.getInt("likes");
-                int picture_id = resultSet.getInt("id");
-                Picture picture = new Picture(picture_id, pictureName, bio, likes);
+                int picture_id = resultSet.getInt("post_id");
+                Timestamp timestamp = resultSet.getTimestamp("created_at");
+                int owner_id = resultSet.getInt("user_id");
+
+                Picture picture = new Picture.Builder()
+                                            .ownerUserId(owner_id)
+                                            .pictureID(picture_id)
+                                            .backdrop_path(pictureName)
+                                            .caption(bio)
+                                            .likes(likes)
+                                            .timestamp(timestamp)
+                                            .build();
                 pictures.add(picture);
            }
 
@@ -205,8 +216,11 @@ public class ExplorePage extends JFrame {
         return navigationPanel;
     }
 
-   private void displayImage(Picture picture) {
+    private void displayImage(Picture picture) {
         String imagePath = picture.getImagePath();
+        String post_bio = picture.getCaption();
+        int post_likes = picture.getLikesCount();
+
         getContentPane().removeAll();
         setLayout(new BorderLayout());
 
@@ -214,33 +228,9 @@ public class ExplorePage extends JFrame {
         add(createHeaderPanel(), BorderLayout.NORTH);
         add(createNavigationPanel(), BorderLayout.SOUTH);
 
-        // Extract image ID from the imagePath
-        String imageId = new File(imagePath).getName().split("\\.")[0];
-        
-        // Read image details
-        String username = "";
-        String bio = "";
-        String timestampString = "";
-        int likes = 0;
-        Path detailsPath = Paths.get("img", "/img/image_details.txt");
-        try (Stream<String> lines = Files.lines(detailsPath)) {
-            String details = lines.filter(line -> line.contains("ImageID: " + imageId)).findFirst().orElse("");
-            if (!details.isEmpty()) {
-                String[] parts = details.split(", ");
-                username = parts[1].split(": ")[1];
-                bio = parts[2].split(": ")[1];
-                timestampString = parts[3].split(": ")[1];
-                likes = Integer.parseInt(parts[4].split(": ")[1]);
-                System.out.println("Image Bio: " + bio + parts[3]);
-            }
-        } catch (IOException ex) {
-            // Handle exception
-            ex.printStackTrace();
-            System.out.println("A error occured while opening the image, Please try again.");
-        }
-
-        // Calculate time since posting
-        String timeSincePosting = CalculateTimeSincePost(timestampString);
+        User owner = picture.getOwnerObject();
+        String username = owner.getUsername();
+        String timeSincePosting = CalculateTimeSincePost(picture.getFormattedTimestamp());
 
         // Top panel for username and time since posting
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -251,7 +241,6 @@ public class ExplorePage extends JFrame {
 
         topPanel.add(usernameLabel, BorderLayout.WEST);
         topPanel.add(timeLabel, BorderLayout.EAST);
-
 
         // Prepare the image for display
         JLabel imageLabel = new JLabel();
@@ -266,11 +255,14 @@ public class ExplorePage extends JFrame {
 
         // Bottom panel for bio and likes
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        JTextArea bioTextArea = new JTextArea(bio);
+        JTextArea bioTextArea = new JTextArea(post_bio);
+
         bioTextArea.setForeground(this.textColor);
         bioTextArea.setBackground(this.primaryColor);
         bioTextArea.setEditable(false);
-        JLabel likesLabel = new JLabel("Likes: " + likes);
+
+        JLabel likesLabel = new JLabel("Likes: " + post_likes);
+        likesLabel.setForeground(this.textColor);
         bottomPanel.add(bioTextArea, BorderLayout.CENTER);
         bottomPanel.add(likesLabel, BorderLayout.SOUTH);
 
@@ -300,11 +292,9 @@ public class ExplorePage extends JFrame {
             revalidate();
             repaint();
         });
-        final String finalUsername = username;
 
         usernameLabel.addActionListener(e -> {
-            User user = new User(finalUsername); // Assuming User class has a constructor that takes a username
-            InstaProfileUI profileUI = new InstaProfileUI(user);
+            InstaProfileUI profileUI = new InstaProfileUI(owner);
             profileUI.setVisible(true);
             dispose(); // Close the current frame
         });

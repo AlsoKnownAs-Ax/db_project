@@ -21,6 +21,8 @@ import java.net.URL;
 import java.nio.file.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 public class UploadPage extends JFrame {
     private static final int WIDTH = GlobalConfig.getWidth();
     private static final int HEIGHT = GlobalConfig.getHeight();
@@ -230,6 +232,7 @@ public class UploadPage extends JFrame {
             String query = """
                     INSERT INTO posts (likes, bio, user_id, backdrop_path)
                     VALUES (?, ?, ?, ?)
+                    RETURNING created_at
                     """;
             var statement = connection.prepareStatement(query);
             
@@ -237,11 +240,25 @@ public class UploadPage extends JFrame {
             statement.setString(2, post_bio);
             statement.setInt(3, uid);
             statement.setString(4, backdrop_path);
-            statement.executeUpdate();
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                Timestamp createdAtTimestamp = resultSet.getTimestamp("created_at");
+                User loggedUser = loggedUserSingleton.getLoggedUser();
+                int owner_id = loggedUser.getUserId();
+                int startingLikes = 0;
 
-            loggedUserSingleton.getLoggedUser().addPost(new Picture(imageID, backdrop_path, post_bio));
+                Picture picture = new Picture.Builder()
+                                            .ownerUserId(owner_id)
+                                            .pictureID(imageID)
+                                            .backdrop_path(backdrop_path)
+                                            .caption(post_bio)
+                                            .likes(startingLikes)
+                                            .timestamp(createdAtTimestamp)
+                                            .build();
+                loggedUser.addPost(picture);
 
-            return true;
+                return true;
+            }
         } catch (Exception e) {
             System.out.println("Failed to save image information: " + e.getMessage());
         }

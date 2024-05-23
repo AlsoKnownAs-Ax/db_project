@@ -2,6 +2,9 @@
 package com.database_project.main_files;
 
 import java.util.List;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 // Represents a picture on Quackstagram
@@ -13,21 +16,17 @@ public class Picture {
     private String caption;
     private int likesCount;
     private List<String> comments;
+    private Timestamp timestamp;
+    private int ownerUserId;
 
-    public Picture(int pictureID, String pictureName, String caption) {
-        this.pictureID = pictureID;
-        this.imagePath = getImagePath(pictureName);
-        this.caption = caption;
-        this.likesCount = 0;
+    public Picture(Builder builder) {
+        this.ownerUserId = builder.ownerUserId;
+        this.pictureID = builder.pictureID;
+        this.imagePath = getImagePath(builder.pictureName);
+        this.caption = builder.caption;
+        this.likesCount = builder.likes;
         this.comments = new ArrayList<>();
-    }
-
-    public Picture(int pictureID, String pictureName, String caption, int likes) {
-        this.pictureID = pictureID;
-        this.imagePath = getImagePath(pictureName);
-        this.caption = caption;
-        this.likesCount = likes;
-        this.comments = new ArrayList<>();
+        this.timestamp = builder.timestamp;
     }
 
     private String getImagePath(String pictureName){
@@ -54,4 +53,59 @@ public class Picture {
     public int getLikesCount() { return likesCount; }
     public List<String> getComments() { return comments; }
     public int getPictureID() { return pictureID; }
+    public Timestamp getTimestamp() { return timestamp; }
+    public int getOwnerUserId() { return ownerUserId; }
+
+    public String getFormattedTimestamp() {
+        LocalDateTime localDateTime = timestamp.toLocalDateTime();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return localDateTime.format(formatter);
+    }
+
+    public User getOwnerObject() {
+        return new User(this.ownerUserId) ;
+    }
+
+    public static class Builder {
+        private int ownerUserId;
+        private int pictureID;
+        private String pictureName;
+        private String caption;
+        private int likes;
+        private Timestamp timestamp;
+
+        public Builder ownerUserId(int ownerUserId) {
+            this.ownerUserId = ownerUserId;
+            return this;
+        }
+
+        public Builder pictureID(int pictureID) {
+            this.pictureID = pictureID;
+            return this;
+        }
+
+        public Builder backdrop_path(String pictureName) {
+            this.pictureName = pictureName;
+            return this;
+        }
+
+        public Builder caption(String caption) {
+            this.caption = caption;
+            return this;
+        }
+
+        public Builder likes(int likes) {
+            this.likes = likes;
+            return this;
+        }
+
+        public Builder timestamp(Timestamp timestamp) {
+            this.timestamp = timestamp;
+            return this;
+        }
+
+        public Picture build() {
+            return new Picture(this);
+        }
+    }
 }

@@ -129,19 +129,23 @@ public class LoginPage extends JFrame {
                 SELECT EXISTS (
                     SELECT 1 
                     FROM users 
-                    WHERE username = ? AND password = ?) 
-                    AS user_exists
+                    WHERE username = ? AND password = ?) AS user_exists,
+                    (SELECT id FROM users WHERE username = ?) as user_id
                 """;
             getUserStmt = connection.prepareStatement(getUserSql);
             getUserStmt.setString(1, username);
             getUserStmt.setString(2, password);
+            getUserStmt.setString(3, username);
             ResultSet resultSet = getUserStmt.executeQuery();
 
             if (resultSet.next()) {
-                resultSet.getBoolean("user_exists");
-                newUser = new User(username);
+                if(resultSet.getBoolean("user_exists")){
+                    int user_id = resultSet.getInt("user_id");
+                    newUser = new User(user_id);
 
-                return true;
+                    return true;
+                
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();

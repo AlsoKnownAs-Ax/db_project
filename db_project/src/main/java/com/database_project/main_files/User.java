@@ -11,38 +11,23 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 
 // Represents a user on Quackstagram
 public class User {
-    private int user_id;
+    private int user_id = -1;   // Default value for undefined user_id
     private String username;
     private String bio;
-    private String password;
     private int followersCount;
     private int followingCount;
     private List<Picture> pictures;
     private DataSource dataSource = DBConnectionPool.getDataSource();
 
-    public User(String username, String bio, String password) {
-        this.username = username;
-        this.bio = bio;
-        this.password = password;
-        fetchUserInformation();
-    }
-
-    public User(int user_id, String username, String bio, String password, int followersCount, int followingCount) {
+    public User(int user_id) {
         this.user_id = user_id;
-        this.username = username;
-        this.bio = bio;
-        this.password = password;
-        this.followersCount = followersCount;
-        this.followingCount = followingCount;
-    }
 
-    public User(String username){
-        this.username = username;
         fetchUserInformation();
     }
 
@@ -69,8 +54,18 @@ public class User {
                 String pictureName = resultSet.getString("backdrop_path");
                 String bio = resultSet.getString("bio");
                 int likes = resultSet.getInt("likes");
-                int picture_id = resultSet.getInt("id");
-                Picture picture = new Picture(picture_id, pictureName, bio, likes);
+                int picture_id = resultSet.getInt("post_id");
+                Timestamp timestamp = resultSet.getTimestamp("created_at");
+                int owner_id = resultSet.getInt("user_id");
+
+                Picture picture = new Picture.Builder()
+                                            .ownerUserId(owner_id)
+                                            .pictureID(picture_id)
+                                            .backdrop_path(pictureName)
+                                            .caption(bio)
+                                            .likes(likes)
+                                            .timestamp(timestamp)
+                                            .build();
                 this.pictures.add(picture);
             }
 
@@ -90,7 +85,7 @@ public class User {
     }
 
     private boolean fetchUserInformation(){
-        if(this.username == null) return false;
+        if(this.user_id == -1) return false;
 
         Connection connection = null;
         PreparedStatement getUserStmt = null;
@@ -99,15 +94,14 @@ public class User {
         try {
             connection = dataSource.getConnection();
 
-            String getUserSql = "SELECT id, bio, password FROM users WHERE username = ?";
+            String getUserSql = "SELECT username, bio FROM users WHERE id = ?";
             getUserStmt = connection.prepareStatement(getUserSql);
-            getUserStmt.setString(1, this.username);
+            getUserStmt.setInt(1, this.user_id);
             ResultSet resultSet = getUserStmt.executeQuery();
 
             if (resultSet.next()) {
-                this.user_id = resultSet.getInt("id");
+                this.username = resultSet.getString("username");
                 this.bio = resultSet.getString("bio");
-                this.password = resultSet.getString("password");
 
                 String getUserStatsSql = "{CALL get_user_stats(?, ?, ?)}";
                 getUserStatsStmt = connection.prepareCall(getUserStatsSql);
@@ -137,7 +131,6 @@ public class User {
             }
         }
 
-        System.out.println("User not found");
         return false;
     }
 
@@ -149,7 +142,6 @@ public class User {
     public int getFollowersCount() { return followersCount; }
     public int getFollowingCount() { return followingCount; }
     public List<Picture> getPictures() { return pictures; }
-    public String getPassword() { return password; }
     public int getUserId() { return user_id; }
 
     // Setter methods for followers and following counts
@@ -159,11 +151,6 @@ public class User {
 
     public void addPost(Picture picture) {
         this.pictures.add(picture);
-    }
-    
-    @Override
-    public String toString() {
-        return username + ":" + bio + ":" + password; // Format as needed
     }
 
     public boolean isEqual(User user) {
