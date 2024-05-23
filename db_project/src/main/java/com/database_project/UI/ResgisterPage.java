@@ -12,8 +12,8 @@ import javax.imageio.ImageIO;
 import javax.sql.DataSource;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.database_project.Database.DBConnectionPool;
 import com.database_project.UI.Config.GlobalConfig;
-import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.ButtonPanel;
 import com.database_project.UI.Panels.FieldsPanel;
 import com.database_project.UI.factory.UIfactory;

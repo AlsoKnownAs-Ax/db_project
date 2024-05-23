@@ -1,4 +1,4 @@
-package com.database_project.UI.Database;
+package com.database_project.Database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -22,11 +22,15 @@ public class DBConnectionPool {
 
     static {
         HikariConfig config = new HikariConfig();
-        
-        String url = "jdbc:mysql://localhost:3306/quackstagram";
         Dotenv dotenv = Dotenv.configure()
                               .directory(getResourcePath())  // Get the path from the classloader
                               .load();
+        
+        String url = String.format("jdbc:mysql://%s:%s/%s",
+                    dotenv.get("DB_CONNECTION"),
+                    dotenv.get("DB_PORT"),
+                    dotenv.get("DB_NAME")
+                );
         
         String user = dotenv.get("DB_USERNAME");
         String password = dotenv.get("DB_PASSWORD");

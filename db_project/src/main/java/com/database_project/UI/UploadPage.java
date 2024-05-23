@@ -4,8 +4,8 @@ import javax.sql.DataSource;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.database_project.Database.DBConnectionPool;
 import com.database_project.UI.Config.GlobalConfig;
-import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
 import com.database_project.main_files.LoggedUserSingleton;

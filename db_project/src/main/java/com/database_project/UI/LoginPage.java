@@ -15,8 +15,8 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 import javax.swing.*;
 
+import com.database_project.Database.DBConnectionPool;
 import com.database_project.UI.Config.GlobalConfig;
-import com.database_project.UI.Database.DBConnectionPool;
 import com.database_project.UI.Panels.*;
 import com.database_project.UI.factory.UIfactory;
 import com.database_project.UI.utils.Debug;

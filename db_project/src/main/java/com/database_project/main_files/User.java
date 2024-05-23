@@ -4,7 +4,7 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import com.database_project.UI.Database.DBConnectionPool;
+import com.database_project.Database.DBConnectionPool;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
