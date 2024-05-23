@@ -42,3 +42,5 @@ build/
 nbbuild/
 dist/
 nbdist/
+
+.env

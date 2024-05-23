@@ -2,18 +2,34 @@ package com.database_project.UI.Database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.github.cdimascio.dotenv.Dotenv;
+
+import java.io.File;
+import java.net.URL;
 
 import javax.sql.DataSource;
 
 public class DBConnectionPool {
     private static final HikariDataSource dataSource;
 
+    private static String getResourcePath() {
+        URL resource = DBConnectionPool.class.getClassLoader().getResource("");
+        if (resource == null) {
+            throw new IllegalArgumentException("Resource directory not found.");
+        }
+        return new File(resource.getFile()).getAbsolutePath();
+    }
+
     static {
         HikariConfig config = new HikariConfig();
         
         String url = "jdbc:mysql://localhost:3306/quackstagram";
-        String user = System.getenv("DB_USERNAME");
-        String password = System.getenv("DB_PASSWORD");
+        Dotenv dotenv = Dotenv.configure()
+                              .directory(getResourcePath())  // Get the path from the classloader
+                              .load();
+        
+        String user = dotenv.get("DB_USERNAME");
+        String password = dotenv.get("DB_PASSWORD");
 
         config.setJdbcUrl(url);
         config.setUsername(user);
