@@ -2,6 +2,13 @@
 package com.database_project.main_files;
 
 import java.util.List;
+
+import javax.sql.DataSource;
+
+import com.database_project.Database.DBConnectionPool;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -10,6 +17,7 @@ import java.util.ArrayList;
 // Represents a picture on Quackstagram
 public class Picture {
     private static final String BASE_PATH = "img/uploaded/";
+    private DataSource dataSource = DBConnectionPool.getDataSource();
 
     private int pictureID;
     private String imagePath;
@@ -43,8 +51,22 @@ public class Picture {
     }
 
     // Increment likes count
-    public void like() {
-        likesCount++;
+    public boolean like() {
+        try {
+            Connection connection = dataSource.getConnection();
+            String sql = "UPDATE posts SET likes = likes + 1 WHERE post_id = ?";
+            PreparedStatement stmt = connection.prepareStatement(sql);
+
+            stmt.setInt(1, pictureID);
+            stmt.executeUpdate();
+            likesCount++;
+            
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error incrementing likes count: " + e.getMessage());
+        }
+
+        return false;
     }
 
     // Getter methods for picture details
