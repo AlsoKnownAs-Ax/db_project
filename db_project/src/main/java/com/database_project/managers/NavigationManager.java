@@ -15,17 +15,29 @@ public class NavigationManager {
 
     private static LoginPage loginPage = new LoginPage(uIfactory);
     private static ResgisterPage registerPage = new ResgisterPage(uIfactory);
-    private static ExplorePage explorePage = new ExplorePage();
-    private static UploadPage uploadPage = new UploadPage();
-    private static NotificationsPage notificationsPage = new NotificationsPage();
-    private static HomePage homePage = new HomePage();
+    private static ExplorePage explorePage;
+    private static UploadPage uploadPage;
+    private static NotificationsPage notificationsPage;
+    private static HomePage homePage;
     private static InstaProfileUI currentProfile;
+
+    private static boolean pagesBuilt = false;
 
     public static void setProfilePage(InstaProfileUI _profilePage) {
         currentProfile = _profilePage;
     }
     
     public NavigationManager(){}
+
+    public static void buildPages(){
+        if(pagesBuilt) return;
+
+        explorePage = new ExplorePage();
+        uploadPage = new UploadPage();
+        notificationsPage = new NotificationsPage();
+        homePage = new HomePage();
+        pagesBuilt= true;
+    }
 
     public static void showLoginPage(){
         hideAllPages();
@@ -60,10 +72,13 @@ public class NavigationManager {
     public static void hideAllPages(){
         loginPage.setVisible(false);
         registerPage.setVisible(false);
-        explorePage.setVisible(false);
-        homePage.setVisible(false);
-        uploadPage.setVisible(false);
-        notificationsPage.setVisible(false);
+
+        if(pagesBuilt){
+            explorePage.setVisible(false);
+            homePage.setVisible(false);
+            uploadPage.setVisible(false);
+            notificationsPage.setVisible(false);
+        }
         
         if(currentProfile != null){
             currentProfile.dispose();
@@ -75,10 +90,6 @@ public class NavigationManager {
 
         loginPage = new LoginPage(uIfactory);
         registerPage = new ResgisterPage(uIfactory);
-        explorePage = new ExplorePage();
-        uploadPage = new UploadPage();
-        notificationsPage = new NotificationsPage();
-        homePage = new HomePage();
     }
 
 }

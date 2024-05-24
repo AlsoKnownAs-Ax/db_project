@@ -51,7 +51,10 @@ public class Picture {
     }
 
     // Increment likes count
-    public boolean like() {
+    private boolean likesIncremented = false;
+    public boolean incrementLikeCount() {
+        if (likesIncremented) return false;
+
         try {
             Connection connection = dataSource.getConnection();
             String sql = "UPDATE posts SET likes = likes + 1 WHERE post_id = ?";
@@ -60,7 +63,8 @@ public class Picture {
             stmt.setInt(1, pictureID);
             stmt.executeUpdate();
             likesCount++;
-            
+            likesIncremented = true;
+
             return true;
         } catch (Exception e) {
             System.out.println("Error incrementing likes count: " + e.getMessage());

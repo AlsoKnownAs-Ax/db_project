@@ -22,7 +22,6 @@ import java.nio.file.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 public class UploadPage extends JFrame {
     private static final int WIDTH = GlobalConfig.getWidth();
     private static final int HEIGHT = GlobalConfig.getHeight();

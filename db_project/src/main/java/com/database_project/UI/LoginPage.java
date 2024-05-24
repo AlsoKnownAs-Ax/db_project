@@ -109,7 +109,9 @@ public class LoginPage extends JFrame {
                 GlobalConfig.setLightMode(lightTheme.isSelected());
 
                 LoggedUserSingleton.getInstance().setUser(newUser);
+                NavigationManager.buildPages();
                 InstaProfileUI profileUI = new InstaProfileUI(newUser);
+                
                 profileUI.setVisible(true);
             });
         } else {
@@ -162,31 +164,6 @@ public class LoginPage extends JFrame {
         return false;
     }
 
-
-    //THIS IS SUPPOSED TO STORE THE CONNECTED USER TO CHECK IF WE ARE ONE SOMEBODY'S PROFILE OR OURS
-    // private void saveUserInformation(User user) {
-    //     try (BufferedWriter writer = new BufferedWriter(new FileWriter("db_project/data/users.txt", false))) {
-    //         writer.write(user.toString());  // Implement a suitable toString method in User class
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-
-    //     // try (var connection = dataSource.getConnection()) {
-    //     //     var query = "INSERT INTO users (username, bio, password, profile_path ) VALUES (?, ?, ?, ?)";
-    //     //     try (var statement = connection.prepareStatement(query)) {
-    //     //         statement.setString(1, user.getUsername());
-    //     //         statement.setString(2, user.getBio());
-    //     //         statement.setString(3, user.getPassword());
-
-    //     //         //TODO: Implement profile path in User class
-    //     //         // statement.setString(4, user.getProfilePath());
-    //     //         statement.executeUpdate();
-    //     //     }
-    //     // } catch (SQLException e) {
-    //     //     e.printStackTrace();
-    //     // }
-    // }
-
     private void onRegisterNowClicked(ActionEvent event) {
         // Open the SignUpUI frame
 
@@ -196,7 +173,6 @@ public class LoginPage extends JFrame {
     }
     
     public static void main(String[] args) {
-
         SwingUtilities.invokeLater(() -> {
             NavigationManager.showLoginPage();
         });

@@ -19,25 +19,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 
 public class HomePage extends JFrame {
     private static final int WIDTH = GlobalConfig.getWidth();
@@ -56,7 +45,7 @@ public class HomePage extends JFrame {
     private Color headerBG;
     private Color headerTextColor;
     private LoggedUserSingleton loggedUserInstance = LoggedUserSingleton.getInstance();
-    DataSource dataSource = DBConnectionPool.getDataSource();
+    private DataSource dataSource = DBConnectionPool.getDataSource();
 
     public HomePage() {
         UIfactory uIfactory = GlobalConfig.getConfigUIfactory();
@@ -101,11 +90,10 @@ public class HomePage extends JFrame {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS)); // Vertical box layout
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // Never allow horizontal scrolling
-         String[][] sampleData = createSampleData(); 
-        populateContentPanel(contentPanel, sampleData);
+        ArrayList<Picture> picturesData = createSampleData(); 
+
+        populateContentPanel(contentPanel, picturesData);
         add(scrollPane, BorderLayout.CENTER);
-        
-        // Set up the home panel
         
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         homePanel.add(scrollPane, BorderLayout.CENTER);
@@ -157,35 +145,36 @@ public class HomePage extends JFrame {
         return navigationPanel;
     }
 
-    private void populateContentPanel(JPanel panel, String[][] sampleData) {
+    private void populateContentPanel(JPanel panel, ArrayList<Picture> picturesData) {
 
-        for (String[] postData : sampleData) {
-            JPanel itemPanel = createItemPanel(postData);
-            JLabel nameLabel = createLabel(postData[0]);
-            JLabel imageLabel = createImageLabel(postData[3]);
+        for (Picture picture : picturesData) {
+            String caption = picture.getCaption();
+            String imagePath = picture.getImagePath();
+            int likes = picture.getLikesCount();
+
+            JPanel itemPanel = createItemPanel();
+            JLabel nameLabel = createLabel(caption);
+            JLabel imageLabel = createImageLabel(imagePath);
             
-            String imageId = new File(postData[3]).getName().split("\\.")[0];
-
-            JLabel descriptionLabel = new JLabel(postData[1]);
+            JLabel descriptionLabel = new JLabel(caption);
             descriptionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            JLabel likesLabel = new JLabel(postData[2]);
+            JLabel likesLabel = new JLabel("Likes: "+ likes);
             likesLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             itemPanel.add(nameLabel);
             itemPanel.add(imageLabel);
             itemPanel.add(descriptionLabel);
             itemPanel.add(likesLabel);
-            itemPanel.add(createLikeButton(imageId, likesLabel));
+            itemPanel.add(createLikeButton(picture, likesLabel));
 
             panel.add(itemPanel);
             panel.setBackground(this.primaryColor);
 
-            // Make the image clickable
             imageLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    displayImage(postData); // Call a method to switch to the image view
+                    displayImage(picture); // Call a method to switch to the image view
                 }
             });
             panel.add(spacingPanel());
@@ -195,12 +184,13 @@ public class HomePage extends JFrame {
 
     //Refactoring: broke down the populateContentPanel into several methods
 
-    private JPanel createItemPanel(String[] postData){
+    private JPanel createItemPanel(){
         JPanel itemPanel = new JPanel();
         itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
         itemPanel.setBackground(this.textColor); // Set the background color for the item panel
         itemPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         itemPanel.setAlignmentX(CENTER_ALIGNMENT);
+
         return itemPanel;
     }
 
@@ -214,20 +204,21 @@ public class HomePage extends JFrame {
         JLabel imageLabel = new JLabel();
         imageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         imageLabel.setPreferredSize(new Dimension(IMAGE_WIDTH, IMAGE_HEIGHT));
-        imageLabel.setBorder(BorderFactory.createLineBorder(this.secondaryColor)); // Add border to image label
+        imageLabel.setBorder(BorderFactory.createLineBorder(this.secondaryColor));
+        
         try {
             BufferedImage originalImage = ImageIO.read(new File(imagePath));
             BufferedImage croppedImage = originalImage.getSubimage(0, 0, Math.min(originalImage.getWidth(), IMAGE_WIDTH), Math.min(originalImage.getHeight(), IMAGE_HEIGHT));
             ImageIcon imageIcon = new ImageIcon(croppedImage);
             imageLabel.setIcon(imageIcon);
         } catch (IOException ex) {
-            // Handle exception: Image file not found or reading error
             imageLabel.setText("Image not found");
         }
+
         return imageLabel;
     }
 
-    private JButton createLikeButton(String imageId, JLabel likesLabel){
+    private JButton createLikeButton(Picture picture, JLabel likesLabel){
         JButton likeButton = new JButton("❤");
         likeButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         likeButton.setBackground(LIKE_BUTTON_COLOR); // Set the background color for the like button
@@ -235,7 +226,7 @@ public class HomePage extends JFrame {
         likeButton.setBorderPainted(false); // Remove border
 
         //Used lambda expression for the action listener
-        likeButton.addActionListener(e -> handleLikeAction(imageId, likesLabel));
+        likeButton.addActionListener(e -> handleLikeAction(picture, likesLabel));
 
         return likeButton;
     }
@@ -248,37 +239,41 @@ public class HomePage extends JFrame {
         return spacingPanel;
     }
 
-private void handleLikeAction(Picture image, JLabel likesLabel) {
-    StringBuilder newContent = new StringBuilder();
-    boolean updated = false;
-    User currentUser = retrieveCurrentUser();
-    User Owner = image.getOwnerObject();
-    String timestamp = image.getFormattedTimestamp();
-    
-    // Read and update image_details.txt
-    if(image.like()){
-        likesLabel.setText("Likes: " + image.getLikesCount());
-    }
-                
-
-        // Record the like in notifications.txt
-        String notification = String.format("%s; %s; %s; %s\n", Owner.getUsername(), currentUser.getUsername(), image.getPictureID(), timestamp);
+    private void handleLikeAction(Picture image, JLabel likesLabel) {
+        User currentUser = retrieveCurrentUser();
+        User Owner = image.getOwnerObject();
         
-        try (BufferedWriter notificationWriter = Files.newBufferedWriter(Paths.get("db_project","data","notifications.txt"), StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            notificationWriter.write(notification);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        if(!image.incrementLikeCount()) return;
+            
+        likesLabel.setText("Likes: " + image.getLikesCount());
+        notify(Owner, currentUser, image);
     }
-}
-private User retrieveCurrentUser() {
-    User loggedUser = loggedUserInstance.getLoggedUser();
-    return loggedUser;
-}
 
-    //Refactoring: separation of concerns
-    private String[][] createSampleData() {
-        String followedUsers = retrieveFollowedUsers();
+    private boolean notify(User targetUser, User currentUser, Picture picture){
+        try {
+            Connection connection = dataSource.getConnection();
+            String sql = "INSERT INTO notifications (post_id, user_id, target_id) VALUES (?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            stmt.setInt(1, picture.getPictureID());
+            stmt.setInt(2, currentUser.getUserId());
+            stmt.setInt(3, targetUser.getUserId());
+            stmt.executeUpdate();
+
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error notifying user: " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    private User retrieveCurrentUser() {
+        User loggedUser = loggedUserInstance.getLoggedUser();
+        return loggedUser;
+    }
+
+    private ArrayList<Picture> createSampleData() {
+        ArrayList<Integer> followedUsers = retrieveFollowedUserIDs();
         return imageData(followedUsers, 100);
     }
 
@@ -297,116 +292,136 @@ private User retrieveCurrentUser() {
         }
         return followedUsers;
     }*/
-    private String retrieveFollowedUsers() {
-        String followedUsers = "";
+    private ArrayList<Integer> retrieveFollowedUserIDs() {
+        ArrayList<Integer> followedUsers = new ArrayList<>();
         User currentUser = retrieveCurrentUser();
 
         String query = """
-                        SELECT GROUP_CONCAT(followed_user_id) AS followed_users
+                        SELECT followed_user_id
                         FROM follows
                         WHERE following_user_id = ?;
                        """;
                                
 
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-
+            PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setInt(1, currentUser.getUserId());
 
             ResultSet resultSet = preparedStatement.executeQuery();
 
-            if (resultSet.next()) {
-                followedUsers = resultSet.getString("followed_users");
+            while (resultSet.next()) {
+                followedUsers.add(resultSet.getInt("followed_user_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return followedUsers;
     }
 
-    private String[][] imageData(String followedUsers, int maximumPosts){
-        // Temporary structure to hold the data
-        String[][] tempData = new String[maximumPosts][]; // Assuming a maximum of 100 posts for simplicity
-        int count = 0;
-
-        // Access the resource from the classpath
-        InputStream is = getClass().getResourceAsStream("/img/image_details.txt");
-        if (is == null) {
-            System.out.println("Resource not found");
-            return null;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line;
-            while ((line = reader.readLine()) != null && count < tempData.length) {
-                String[] details = line.split(", ");
-                String imagePoster = details[1].split(": ")[1];
-                if (followedUsers.contains(imagePoster)) {
-                    String imagePath = "/img/uploaded/" + details[0].split(": ")[1] + ".png"; // Assuming PNG format
-                    String description = details[2].split(": ")[1];
-                    String likes = "Likes: " + details[4].split(": ")[1];
-    
-                    tempData[count++] = new String[]{imagePoster, description, likes, imagePath};
-                }
+    private String buildIdsString(ArrayList<Integer> followedUsersIDs){
+        StringBuilder ids = new StringBuilder();
+        for (int i = 0; i < followedUsersIDs.size(); i++) {
+            ids.append(followedUsersIDs.get(i));
+            if (i < followedUsersIDs.size() - 1) {
+                ids.append(",");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return Arrays.copyOf(tempData, count);
+
+        return ids.toString();
+    }
+
+    private ArrayList<Picture> imageData(ArrayList<Integer> followedUsersIDs, int maximumPosts){
+        ArrayList<Picture> pictures = new ArrayList<>(maximumPosts);
+
+        try {
+            Connection connection = dataSource.getConnection();
+            String query = """
+                            SELECT *
+                            FROM posts
+                            WHERE user_id IN (?)
+                            ORDER BY RAND()
+                            LIMIT ?;
+                           """;
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, buildIdsString(followedUsersIDs));
+            preparedStatement.setInt(2, maximumPosts);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while(resultSet.next()){
+                String pictureName = resultSet.getString("backdrop_path");
+                String bio = resultSet.getString("bio");
+                int likes = resultSet.getInt("likes");
+                int picture_id = resultSet.getInt("post_id");
+                Timestamp timestamp = resultSet.getTimestamp("created_at");
+                int owner_id = resultSet.getInt("user_id");
+
+                Picture picture = new Picture.Builder()
+                                            .ownerUserId(owner_id)
+                                            .pictureID(picture_id)
+                                            .backdrop_path(pictureName)
+                                            .caption(bio)
+                                            .likes(likes)
+                                            .timestamp(timestamp)
+                                            .build();;
+                pictures.add(picture);
+            }
+
+            return pictures;
+        } catch (Exception e) {
+            System.out.println("Error retrieving images data: " + e.getMessage());
+        }
+
+        return null;
     }
     
     private boolean inDisplayImageView = false;
 
-    private void displayImage(String[] postData) {
+    private void displayImage(Picture postData) {
         inDisplayImageView = true;
         imageViewPanel.removeAll(); // Clear previous content
-
        
-        String imageId = new File(postData[3]).getName().split("\\.")[0];
-        JLabel likesLabel = new JLabel(postData[2]); // Update this line
+        String imagePath = postData.getImagePath();
+        User owner = postData.getOwnerObject();
 
+        JLabel likesLabel = new JLabel("Likes: " + postData.getLikesCount()); // Update this line
 
-
-        // Display the image
         JLabel fullSizeImageLabel = new JLabel();
         fullSizeImageLabel.setHorizontalAlignment(JLabel.CENTER);
-      
 
-         try {
-                BufferedImage originalImage = ImageIO.read(new File(postData[3]));
-                BufferedImage croppedImage = originalImage.getSubimage(0, 0, Math.min(originalImage.getWidth(), WIDTH-20), Math.min(originalImage.getHeight(), HEIGHT-40));
-                ImageIcon imageIcon = new ImageIcon(croppedImage);
-                fullSizeImageLabel.setIcon(imageIcon);
-            } catch (IOException ex) {
-                // Handle exception: Image file not found or reading error
-                fullSizeImageLabel.setText("Image not found");
-            }
+        try {
+            BufferedImage originalImage = ImageIO.read(new File(imagePath));
+            BufferedImage croppedImage = originalImage.getSubimage(0, 0, Math.min(originalImage.getWidth(), WIDTH-20), Math.min(originalImage.getHeight(), HEIGHT-40));
+            ImageIcon imageIcon = new ImageIcon(croppedImage);
+            fullSizeImageLabel.setIcon(imageIcon);
+        } catch (IOException ex) {
+            fullSizeImageLabel.setText("Image not found");
+        }
 
         //User Info 
         JPanel userPanel = new JPanel();
         userPanel.setLayout(new BoxLayout(userPanel,BoxLayout.Y_AXIS));
-        JLabel userName = new JLabel(postData[0]);
+        JLabel userName = new JLabel(owner.getUsername());
         userName.setFont(new Font("Arial", Font.BOLD, 18));
         userPanel.add(userName);//User Name
 
-           JButton likeButton = new JButton("❤");
-            likeButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-            likeButton.setBackground(LIKE_BUTTON_COLOR); // Set the background color for the like button
-            likeButton.setOpaque(true);
-            likeButton.setBorderPainted(false); // Remove border
-            likeButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                   handleLikeAction(imageId, likesLabel); // Update this line
-                   refreshDisplayImage(postData, imageId); // Refresh the view
-                }
-            });
+        JButton likeButton = new JButton("❤");
+        likeButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        likeButton.setBackground(LIKE_BUTTON_COLOR); // Set the background color for the like button
+        likeButton.setOpaque(true);
+        likeButton.setBorderPainted(false); // Remove border
+        likeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                handleLikeAction(postData, likesLabel); // Update this line
+                refreshDisplayImage(postData); // Refresh the view
+            }
+        });
        
         // Information panel at the bottom
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.add(new JLabel(postData[1])); // Description
-        infoPanel.add(new JLabel(postData[2])); // Likes
+        infoPanel.add(new JLabel(postData.getCaption())); // Description
+        infoPanel.add(new JLabel("Likes: " + postData.getLikesCount())); // Likes
         infoPanel.add(likeButton);
 
         imageViewPanel.add(fullSizeImageLabel, BorderLayout.CENTER);
@@ -416,31 +431,11 @@ private User retrieveCurrentUser() {
         imageViewPanel.revalidate();
         imageViewPanel.repaint();
 
-
         cardLayout.show(cardPanel, "ImageView"); // Switch to the image view
     }
 
-    private void refreshDisplayImage(String[] postData, String imageId) {
-        InputStream is = getClass().getResourceAsStream("/img/image_details.txt");
-        if (is == null) {
-            System.out.println("File not found in resources.");
-            return;
-        }
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("ImageID: " + imageId)) {
-                    String likes = line.split(", ")[4].split(": ")[1];
-                    postData[2] = "Likes: " + likes;
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    
-        // Call displayImage with updated postData
-        displayImage(postData);
+    private void refreshDisplayImage(Picture picture) {
+        displayImage(picture);
     }
 
 }
