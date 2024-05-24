@@ -14,7 +14,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.awt.event.MouseEvent;
 
 import javax.sql.DataSource;
@@ -60,9 +63,14 @@ public class InstaProfileUI extends JFrame{
         this.followBtnColor = uifactory.getFollowBtnColor();
 
         this.currentUser = user;
+        User loggedUser = loggedUserInstance.getLoggedUser();
+        isCurrentUser = currentUser.isEqual(loggedUser);
+        
         setInformantion();
         InitializeInstaProfileUI();
         NavigationManager.setProfilePage(this);
+
+
     }
 
     public void setInformantion(){
@@ -103,8 +111,6 @@ public class InstaProfileUI extends JFrame{
     
     private JPanel createHeaderPanel() {
         JPanel headerPanel = new JPanel();
-        User loggedUser = loggedUserInstance.getLoggedUser();
-        isCurrentUser = currentUser.equals(loggedUser);
 
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
         headerPanel.setBackground(this.textColor);
@@ -202,7 +208,15 @@ public class InstaProfileUI extends JFrame{
         return statsFollowPanel;
     }
 
+    private HashMap<Integer, Set<Integer>> followingCache = new HashMap<>();
+
     private boolean isUserFollowingAnotherUser(int loggedUserID, int currentUserID){
+        if(followingCache.containsKey(loggedUserID)){
+            debug.print("Following Cache", "Cache Hit", "User: " + loggedUserID + " -> " + currentUserID);
+            return followingCache.get(loggedUserID).contains(currentUserID);
+        }
+
+
         try{
             Connection connection = dataSource.getConnection();
 
@@ -219,7 +233,11 @@ public class InstaProfileUI extends JFrame{
             ResultSet resultSet = isFollowingStmt.executeQuery();
 
             if (resultSet.next()) {
-                return resultSet.getBoolean("is_following");
+                boolean isFollowing = resultSet.getBoolean("is_following");
+                if(isFollowing){
+                    followingCache.computeIfAbsent(loggedUserID, k -> new HashSet<>()).add(currentUserID);
+                }
+                return isFollowing;
             } 
             
         }catch (Exception e){
@@ -267,6 +285,10 @@ public class InstaProfileUI extends JFrame{
     }
 
     private void followUser(int loggedUserID, int target_id) throws SQLException {
+    if(isUserFollowingAnotherUser(loggedUserID, target_id)){
+        return;
+    }
+
     String query = """
                     INSERT INTO follows (following_user_id, followed_user_id)
                     VALUES (?, ?)
