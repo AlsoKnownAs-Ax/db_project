@@ -1,10 +1,15 @@
 package com.database_project.UI;
 import javax.imageio.ImageIO;
+import javax.sql.DataSource;
 import javax.swing.*;
 
+import com.database_project.Database.DBConnectionPool;
 import com.database_project.UI.Config.GlobalConfig;
 import com.database_project.UI.Panels.NavigationPanel;
 import com.database_project.UI.factory.UIfactory;
+import com.database_project.main_files.LoggedUserSingleton;
+import com.database_project.main_files.Picture;
+import com.database_project.main_files.User;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -25,6 +30,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -45,7 +55,8 @@ public class HomePage extends JFrame {
     private Color textColor;
     private Color headerBG;
     private Color headerTextColor;
-
+    private LoggedUserSingleton loggedUserInstance = LoggedUserSingleton.getInstance();
+    DataSource dataSource = DBConnectionPool.getDataSource();
 
     public HomePage() {
         UIfactory uIfactory = GlobalConfig.getConfigUIfactory();
@@ -237,46 +248,21 @@ public class HomePage extends JFrame {
         return spacingPanel;
     }
 
-private void handleLikeAction(String imageId, JLabel likesLabel) {
+private void handleLikeAction(Picture image, JLabel likesLabel) {
     StringBuilder newContent = new StringBuilder();
     boolean updated = false;
-    String currentUser = retrieveCurrentUser();
-    String imageOwner = "";
-    String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    User currentUser = retrieveCurrentUser();
+    User Owner = image.getOwnerObject();
+    String timestamp = image.getFormattedTimestamp();
     
     // Read and update image_details.txt
-    Path detailsPath = Paths.get("img", "/img/image_details.txt");
-    try (BufferedReader reader = Files.newBufferedReader(detailsPath)) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            if (line.contains("ImageID: " + imageId)) {
-                String[] parts = line.split(", ");
-                imageOwner = parts[1].split(": ")[1];
-                int likes = Integer.parseInt(parts[4].split(": ")[1]);
-                likes++; // Increment the likes count 
-                parts[4] = "Likes: " + likes;
-                line = String.join(", ", parts);
-
-                // Update the UI
-                likesLabel.setText("Likes: " + likes);
-                updated = true;
-            }
-            newContent.append(line).append("\n");
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
+    if(image.like()){
+        likesLabel.setText("Likes: " + image.getLikesCount());
     }
-
-    // Write updated likes back to image_details.txt
-    if (updated) {
-        try (BufferedWriter writer = Files.newBufferedWriter(detailsPath)) {
-            writer.write(newContent.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+                
 
         // Record the like in notifications.txt
-        String notification = String.format("%s; %s; %s; %s\n", imageOwner, currentUser, imageId, timestamp);
+        String notification = String.format("%s; %s; %s; %s\n", Owner.getUsername(), currentUser.getUsername(), image.getPictureID(), timestamp);
         
         try (BufferedWriter notificationWriter = Files.newBufferedWriter(Paths.get("db_project","data","notifications.txt"), StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
             notificationWriter.write(notification);
@@ -285,18 +271,9 @@ private void handleLikeAction(String imageId, JLabel likesLabel) {
         }
     }
 }
-private String retrieveCurrentUser() {
-    String filePath = "db_project/data/users.txt";
-    
-    try (BufferedReader userReader = new BufferedReader(new FileReader(filePath))) {
-        String line = userReader.readLine();
-        if (line != null) {
-            return line.split(":")[0].trim();
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-    return "";
+private User retrieveCurrentUser() {
+    User loggedUser = loggedUserInstance.getLoggedUser();
+    return loggedUser;
 }
 
     //Refactoring: separation of concerns
@@ -305,7 +282,7 @@ private String retrieveCurrentUser() {
         return imageData(followedUsers, 100);
     }
 
-    private String retrieveFollowedUsers(){
+    /*private String retrieveFollowedUsers(){
         String followedUsers = "";
         try (BufferedReader reader = Files.newBufferedReader(Paths.get("db_project","data", "following.txt"))) {
             String line;
@@ -316,6 +293,32 @@ private String retrieveCurrentUser() {
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return followedUsers;
+    }*/
+    private String retrieveFollowedUsers() {
+        String followedUsers = "";
+        User currentUser = retrieveCurrentUser();
+
+        String query = """
+                        SELECT GROUP_CONCAT(followed_user_id) AS followed_users
+                        FROM follows
+                        WHERE following_user_id = ?;
+                       """;
+                               
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, currentUser.getUserId());
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                followedUsers = resultSet.getString("followed_users");
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return followedUsers;
