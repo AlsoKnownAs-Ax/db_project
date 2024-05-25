@@ -53,6 +53,16 @@ CREATE TABLE follows (
     UNIQUE (following_user_id, followed_user_id) -- Ensures a user can't follow another user more than once
 );
 
+CREATE TABLE likes (
+    like_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    post_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (post_id) REFERENCES posts(post_id),
+    UNIQUE (user_id, post_id)
+);
+
 
 
 INSERT INTO users (username, password, bio, profile_path)
