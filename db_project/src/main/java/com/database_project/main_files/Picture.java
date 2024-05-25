@@ -16,6 +16,7 @@ import java.util.ArrayList;
 
 // Represents a picture on Quackstagram
 public class Picture {
+    private static final String IMAGE_NOT_FOUND_NAME = "404.png";
     private static final String BASE_PATH = "img/uploaded/";
     private DataSource dataSource = DBConnectionPool.getDataSource();
 
@@ -41,7 +42,7 @@ public class Picture {
         try {
             return getClass().getClassLoader().getResource(BASE_PATH + pictureName).getPath();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid picture name \n" + e.getMessage() + "\n" + "for picture: " + pictureName);
+            return getClass().getClassLoader().getResource(BASE_PATH + IMAGE_NOT_FOUND_NAME).getPath();
         }
     }
     
