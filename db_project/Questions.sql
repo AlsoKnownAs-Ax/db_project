@@ -1,5 +1,5 @@
 -- 1. List all users who have more than X followers where X can be any integer value.
-SET @X = 5;
+SET @X = 2;
 
 SET @query = CONCAT('
 SELECT u.username, COUNT(f.followed_user_id) AS followers_count
@@ -126,7 +126,7 @@ GROUP BY p.post_id
 HAVING comments_count > p.likes;
 
 -- 14. List the users who have liked every post of a specific user.
-SET @specific_user_id = 1;
+SET @specific_user_id = 6;
 SET @query = CONCAT('
 SELECT u.username
 FROM users u
@@ -178,23 +178,23 @@ WHERE NOT EXISTS (
     FROM posts p
     LEFT JOIN likes l ON p.post_id = l.post_id AND l.user_id = u.id
     LEFT JOIN comments c ON p.post_id = c.post_id AND c.user_id = u.id
-    WHERE p.user_id = ',@specific_user_id,');
-    ');
+    WHERE p.user_id = ', @specific_user_id, '
+    AND (l.user_id IS NOT NULL OR c.user_id IS NOT NULL)
+);');
 
 PREPARE stmt FROM @query;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
-
 -- 19. Display the user with the greatest increase in followers in the last X days.
 -- This one needs more testing
 SET @X_days = 30;
 SET @query = CONCAT('
-    SELECT u.username, (COUNT(f.followed_user_id) - COUNT(f_old.followed_user_id)) AS follower_increase
+    SELECT u.username, (COUNT(f_new.following_user_id) - COUNT(f_old.following_user_id)) AS follower_increase
     FROM users u
-    JOIN follows f ON u.id = f.followed_user_id
-    AND f.created_at > DATE_SUB(NOW(), INTERVAL ',@X_days,' DAY)
-    JOIN follows f_old ON u.id = f_old.followed_user_id
-    AND f_old.created_at <= DATE_SUB(NOW(), INTERVAL ',@X_days,' DAY)
+    LEFT JOIN follows f_new ON u.id = f_new.followed_user_id
+    AND f_new.created_at > DATE_SUB(NOW(), INTERVAL ', @X_days, ' DAY)
+    LEFT JOIN follows f_old ON u.id = f_old.followed_user_id
+    AND f_old.created_at <= DATE_SUB(NOW(), INTERVAL ', @X_days, ' DAY)
     GROUP BY u.id
     ORDER BY follower_increase DESC
     LIMIT 1;
@@ -206,7 +206,7 @@ DEALLOCATE PREPARE stmt;
 
 
 -- 20. Find users who are followed by more than X% of the platform users.
-SET @X_percent = 50;
+SET @X_percent = 1;
 SET @query = CONCAT('
     SELECT u.username, COUNT(f.followed_user_id) AS followers_count
     FROM users u

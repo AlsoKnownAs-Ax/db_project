@@ -31,3 +31,4 @@ HAVING total_notifications > 0;
 CREATE INDEX idx_posts_user_id_likes ON posts(user_id, likes);
 CREATE INDEX idx_comments_user_id ON comments(user_id);
 CREATE INDEX idx_notifications_post_id ON notifications(post_id);
+CREATE INDEX idx_users_id ON users(id);
