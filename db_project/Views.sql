@@ -12,7 +12,6 @@ HAVING total_posts > 0 OR total_comments > 0;
 
 CREATE VIEW MostLikedPosts AS
 SELECT p.post_id,
-    p.title,
     p.user_id,
     p.likes
 FROM posts p
@@ -22,7 +21,6 @@ ORDER BY p.likes DESC;
 
 CREATE VIEW NotificationsPerPost AS
 SELECT p.post_id,
-    p.title,
     COUNT(n.id) AS total_notifications
 FROM posts p
 JOIN notifications n ON p.post_id = n.post_id
